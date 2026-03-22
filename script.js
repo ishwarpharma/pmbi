@@ -93,8 +93,8 @@ function highlight(text, query) {
   if (!text) return "";
 
   let regex = new RegExp(`(${query})`, "gi");
-  return text.replace(regex, `<span style="background:yellow">$1</span>`);
-}
+  return text.replace(regex, `<span class="highlight">$1</span>`);
+  }
 
 
 // 📦 LIST VIEW
