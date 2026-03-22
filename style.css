@@ -47,10 +47,21 @@ button {
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  opacity: 0.9;
 }
 
 button:active {
   transform: scale(0.98);
+}
+
+/* DISABLED BUTTON (OUT OF STOCK) */
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 /* SEARCH */
@@ -106,12 +117,18 @@ button:active {
 .highlight {
   background: yellow;
   font-weight: bold;
+  padding: 1px 3px;
+  border-radius: 3px;
 }
 
-/* BACK BUTTON */
+/* BACK BUTTON (FIXED) */
 .back-btn {
   background: #555;
   margin-bottom: 10px;
+}
+
+.back-btn:hover {
+  background: #444;
 }
 
 /* CART */
@@ -143,6 +160,10 @@ button:active {
 .place-btn {
   background: #28a745;
   margin-top: 8px;
+}
+
+.place-btn:hover {
+  background: #218838;
 }
 
 /* MOBILE OPTIMIZATION */
