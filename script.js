@@ -1,7 +1,7 @@
 let data = [];
 let cart = [];
 
-// 🚀 LOAD EXCEL AUTOMATICALLY FROM GITHUB
+// LOAD EXCEL
 async function loadExcelFromServer() {
   try {
     const response = await fetch("pmbi.xlsx");
@@ -11,44 +11,48 @@ async function loadExcelFromServer() {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json(sheet);
 
-    // ✅ EXACT MAPPING BASED ON YOUR FILE
-    data = json.map(row => ({
-      drug_code: row["Drug Code"]?.toString().trim(),
-      drug_name: row["Drug Name"]?.toString().trim(),
-      batch: row["Batch No"]?.toString().trim(),
-      expiry: row["Exp Date"]?.toString().trim(),
-      qty: Number(row["QTY"]) || 0,
-      price: Number(row["Sales Rate"]) || 0
-    }));
+    data = json.map(row => {
+      const keys = Object.keys(row);
 
-    console.log("✅ Excel Loaded:", data.length, "items");
+      const get = (name) => {
+        let key = keys.find(k => k.trim().toLowerCase() === name.toLowerCase());
+        return key ? row[key] : "";
+      };
 
-  } catch (error) {
-    alert("Error loading Excel file. Make sure pmbi.xlsx is uploaded.");
-    console.error(error);
+      return {
+        drug_code: get("Drug Code")?.toString().trim(),
+        drug_name: get("Drug Name")?.toString().trim(),
+        batch: get("Batch No"),
+        expiry: get("Exp Date"),
+        qty: Number(get("QTY")) || 0,
+        price: Number(get("Sales Rate")) || 0
+      };
+    });
+
+    console.log("Excel Loaded:", data.length);
+
+  } catch (err) {
+    alert("Excel file not found. Upload pmbi.xlsx.");
   }
 }
 
-// Load automatically
 loadExcelFromServer();
 
-
-// 🚀 START APP
+// START APP (ALLOW WITHOUT DETAILS)
 function startApp() {
   let store = document.getElementById("storeCode").value;
+  let city = document.getElementById("city").value;
   let mobile = document.getElementById("mobile").value;
 
-  if (!store || !mobile) {
-    alert("Please fill details");
-    return;
+  if (!store || !city || !mobile) {
+    alert("⚠️ You can browse, but order will NOT be processed without full details.");
   }
 
   document.getElementById("loginBox").style.display = "none";
   document.getElementById("app").style.display = "block";
 }
 
-
-// 🔍 SEARCH (IMPROVED)
+// SEARCH
 function searchProducts() {
   let query = document.getElementById("search").value.toLowerCase();
 
@@ -65,12 +69,11 @@ function searchProducts() {
   displayProducts(results);
 }
 
-
-// 📦 DISPLAY PRODUCTS
+// DISPLAY
 function displayProducts(items) {
   let html = "";
 
-  items.slice(0, 50).forEach(item => {  // limit for performance
+  items.slice(0, 50).forEach(item => {
     html += `
       <div class="product">
         <b>${item.drug_name}</b><br>
@@ -89,8 +92,7 @@ function displayProducts(items) {
   document.getElementById("products").innerHTML = html;
 }
 
-
-// 🛒 ADD TO CART (FIXED DUPLICATES)
+// ADD TO CART
 function addToCart(code) {
   let item = data.find(i => i.drug_code == code);
   let qty = parseInt(document.getElementById(`qty-${code}`).value);
@@ -108,28 +110,27 @@ function addToCart(code) {
   updateCart();
 }
 
-
-// 🔄 UPDATE CART
+// UPDATE CART
 function updateCart() {
   let html = "";
 
   cart.forEach((item, i) => {
-    html += `
-      <div class="cart-item">
-        ${i+1}. ${item.drug_name} × ${item.order_qty}
-      </div>
-    `;
+    html += `${i+1}. ${item.drug_name} × ${item.order_qty}<br>`;
   });
 
   document.getElementById("cartItems").innerHTML = html;
 }
 
-
-// 📲 PLACE ORDER (CLEAN FORMAT)
+// PLACE ORDER (BLOCK IF DETAILS MISSING)
 function placeOrder() {
   let store = document.getElementById("storeCode").value;
   let city = document.getElementById("city").value;
   let mobile = document.getElementById("mobile").value;
+
+  if (!store || !city || !mobile) {
+    alert("❌ Please fill Store Code, City, and Mobile before placing order.");
+    return;
+  }
 
   if (cart.length === 0) {
     alert("Cart is empty");
