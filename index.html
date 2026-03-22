@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ishwar Pharma PMBI Orders</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+  <h1>Jan Aushadhi Order Portal</h1>
+  <p>Ishwar Pharma Nagpur</p>
+</header>
+
+<!-- LOGIN -->
+<div class="login-box" id="loginBox">
+  <input type="text" id="storeCode" placeholder="Store Code">
+  <input type="text" id="city" placeholder="City / District">
+  <input type="number" id="mobile" placeholder="Mobile Number">
+  <button onclick="startApp()">Start Ordering</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;">
+
+  <!-- SEARCH -->
+  <input type="text" id="search" placeholder="🔍 Search Drug Code or Name" onkeyup="searchProducts()">
+
+  <!-- PRODUCTS -->
+  <div id="products"></div>
+
+  <!-- CART -->
+  <div class="cart">
+    <h3>🛒 Cart</h3>
+    <div id="cartItems"></div>
+    <button onclick="placeOrder()">Place Order</button>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
