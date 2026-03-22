@@ -1,59 +1,145 @@
+/* GLOBAL */
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   margin: 0;
-  background: #f5faff;
+  background: #f4f8fb;
 }
 
-header {
-  background: #1E73BE;
+/* HEADER */
+.topbar {
+  background: linear-gradient(90deg, #1E73BE, #155a96);
   color: white;
   text-align: center;
-  padding: 15px;
+  padding: 14px 10px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
+.subtext {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* LOGIN */
 .login-box {
   padding: 20px;
 }
 
+.login-box input {
+  font-size: 15px;
+}
+
+/* INPUTS */
 input {
   width: 100%;
   padding: 12px;
   margin: 8px 0;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #ccc;
+  font-size: 15px;
 }
 
+/* BUTTON */
 button {
   width: 100%;
   padding: 12px;
   background: #F58220;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-#search {
-  margin: 10px;
+button:active {
+  transform: scale(0.98);
 }
 
+/* SEARCH */
+.search-box {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  padding: 10px;
+  z-index: 10;
+  border-bottom: 1px solid #ddd;
+}
+
+.search-box input {
+  border: 2px solid #1E73BE;
+  border-radius: 25px;
+  padding-left: 15px;
+}
+
+/* PRODUCT CARD */
 .product {
   background: white;
   margin: 10px;
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  border-left: 5px solid #1E73BE;
 }
 
+.product b {
+  font-size: 15px;
+  color: #1E73BE;
+}
+
+.product input {
+  width: 60px;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.product button {
+  width: auto;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+/* CART */
 .cart {
   position: fixed;
   bottom: 0;
   width: 100%;
-  background: white;
+  background: #ffffff;
   padding: 10px;
-  border-top: 2px solid #ccc;
+  border-top: 2px solid #ddd;
+  box-shadow: 0 -3px 8px rgba(0,0,0,0.1);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.cart h3 {
+  margin: 5px 0;
+  color: #1E73BE;
 }
 
 .cart-item {
   font-size: 14px;
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+}
+
+/* PLACE ORDER BUTTON */
+.place-btn {
+  background: #28a745;
+  margin-top: 8px;
+}
+
+/* MOBILE OPTIMIZATION */
+@media (max-width: 600px) {
+  .product {
+    font-size: 14px;
+  }
+
+  button {
+    font-size: 15px;
+  }
+
+  .topbar {
+    font-size: 16px;
+  }
 }
