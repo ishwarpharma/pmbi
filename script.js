@@ -12,26 +12,30 @@ async function loadExcelFromServer() {
     const json = XLSX.utils.sheet_to_json(sheet);
 
 // 🔥 CLEAN + SAFE MAPPING
-    
-   data = json.map(row => {
-  let cleaned = {};
 
-  Object.keys(row).forEach(key => {
-    cleaned[key.trim().toLowerCase()] = row[key];
-  });
+const workbook = XLSX.read(arrayBuffer, { type: "array" });
+const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-  return {
-    drug_code: cleaned["drug code"]?.toString().trim() || "",
-    drug_name: cleaned["drug name"]?.toString().trim() || "",
-    uom: cleaned["uom name"] || "",
-    batch: cleaned["batch no"] || "",
-    expiry: cleaned["exp date"] || "",
-    qty: Number(cleaned["qty"]) || 0,
-    price: Number(cleaned["sales rate"]) || 0,
-    mrp: Number(cleaned["mrp"]) || 0
-  };
-});
-      
+// READ RAW ROWS
+let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+// 🔥 REMOVE EMPTY ROWS
+rows = rows.filter(r => r.length > 3);
+
+// 🔥 REMOVE HEADER ROW
+rows.shift();
+
+data = rows.map(r => ({
+  drug_code: r[1] ? r[1].toString().trim() : "",
+  drug_name: r[2] ? r[2].toString().trim() : "",
+  uom: r[3] || "",
+  batch: r[4] || "",
+  expiry: r[5] || "",
+  qty: Number(r[6]) || 0,
+  price: Number(r[8]) || 0,
+  mrp: Number(r[9]) || 0
+}));
+          
     // SORT
     data.sort((a, b) => (a.drug_code || "").localeCompare(b.drug_code || ""));
 
