@@ -11,7 +11,7 @@ async function loadExcelFromServer() {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json(sheet);
 
-    // 🔥 CLEAN + SAFE MAPPING (FIXES BLANK ISSUE)
+    // 🔥 CLEAN + SAFE MAPPING
     data = json.map(row => {
       let cleaned = {};
 
@@ -62,7 +62,7 @@ function startApp() {
 }
 
 
-// 🔍 SEARCH (SMART)
+// 🔍 SEARCH
 function searchProducts() {
   let query = document.getElementById("search").value.toLowerCase();
 
@@ -88,21 +88,23 @@ function searchProducts() {
 }
 
 
-// ✨ HIGHLIGHT
+// ✨ HIGHLIGHT (FIXED)
 function highlight(text, query) {
   if (!text) return "";
 
   let regex = new RegExp(`(${query})`, "gi");
   return text.replace(regex, `<span class="highlight">$1</span>`);
-  }
+}
 
 
-// 📦 LIST VIEW
+// 📦 LIST VIEW (FIXED BLANK ROWS)
 function displayProducts(items, query = "") {
   let html = "";
 
   items.slice(0, 100).forEach(item => {
-    if (!item.drug_code && !item.drug_name) return;
+
+    // 🔥 FIX: skip invalid rows
+    if (!item.drug_code || !item.drug_name) return;
 
     html += `
       <div class="product" onclick="showDetails('${item.drug_code}')">
@@ -116,16 +118,15 @@ function displayProducts(items, query = "") {
 }
 
 
-// 📄 DETAIL VIEW
+// 📄 DETAIL VIEW (FIXED BACK BUTTON + STOCK)
 function showDetails(code) {
   let item = data.find(i => i.drug_code == code);
-
   if (!item) return;
 
   let html = `
     <div class="product">
 
-      <button onclick="displayProducts(data)" style="margin-bottom:10px;">⬅ Back</button>
+      <button class="back-btn" onclick="displayProducts(data)">⬅ Back</button>
 
       <b>${item.drug_name}</b><br><br>
 
@@ -143,7 +144,11 @@ function showDetails(code) {
 
       <div id="amountBox" style="margin-top:8px; font-weight:bold;"></div>
 
-      <button onclick="addDetailToCart('${item.drug_code}')">Add to Cart</button>
+      <button onclick="addDetailToCart('${item.drug_code}')"
+        ${item.qty === 0 ? "disabled" : ""}>
+        ${item.qty === 0 ? "Out of Stock" : "Add to Cart"}
+      </button>
+
     </div>
   `;
 
@@ -161,7 +166,6 @@ function calculateAmount(price) {
   }
 
   let amount = qty * price;
-
   document.getElementById("amountBox").innerHTML = `Amount: ₹${amount}`;
 }
 
