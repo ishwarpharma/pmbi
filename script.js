@@ -23,19 +23,21 @@ async function loadExcelFromServer() {
       return {
         drug_code: get("Drug Code")?.toString().trim(),
         drug_name: get("Drug Name")?.toString().trim(),
+        uom: get("Uom Name"),
         batch: get("Batch No"),
         expiry: get("Exp Date"),
         qty: Number(get("QTY")) || 0,
-        price: Number(get("Sales Rate")) || 0
+        price: Number(get("Sales Rate")) || 0,
+        mrp: Number(get("Mrp")) || 0
       };
     });
 
-    // 🔥 SORT BY DRUG CODE
+    // SORT
     data.sort((a, b) => (a.drug_code || "").localeCompare(b.drug_code || ""));
 
     console.log("Loaded:", data.length);
 
-    // 👉 SHOW ALL BY DEFAULT
+    // SHOW LIST
     displayProducts(data);
 
   } catch (err) {
@@ -61,7 +63,7 @@ function startApp() {
 }
 
 
-// 🔍 SEARCH WITH RANKING + HIGHLIGHT
+// SEARCH
 function searchProducts() {
   let query = document.getElementById("search").value.toLowerCase();
 
@@ -79,7 +81,6 @@ function searchProducts() {
     return { ...item, score };
   });
 
-  // FILTER + SORT BY BEST MATCH
   results = results
     .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score);
@@ -88,7 +89,7 @@ function searchProducts() {
 }
 
 
-// ✨ HIGHLIGHT FUNCTION
+// HIGHLIGHT
 function highlight(text, query) {
   if (!text) return "";
 
@@ -97,22 +98,15 @@ function highlight(text, query) {
 }
 
 
-// DISPLAY PRODUCTS
+// LIST VIEW
 function displayProducts(items, query = "") {
   let html = "";
 
   items.slice(0, 100).forEach(item => {
     html += `
-      <div class="product">
-        <b>${highlight(item.drug_name, query)}</b><br>
-        Code: ${highlight(item.drug_code, query)}<br>
-        Batch: ${item.batch}<br>
-        Expiry: ${item.expiry}<br>
-        Stock: ${item.qty}<br>
-        Price: ₹${item.price}<br><br>
-
-        <input type="number" placeholder="Qty" id="qty-${item.drug_code}">
-        <button onclick="addToCart('${item.drug_code}')">Add</button>
+      <div class="product" onclick="showDetails('${item.drug_code}')">
+        <b>${highlight(item.drug_code, query)}</b> - 
+        ${highlight(item.drug_name, query)}
       </div>
     `;
   });
@@ -121,12 +115,64 @@ function displayProducts(items, query = "") {
 }
 
 
-// ADD TO CART
-function addToCart(code) {
+// DETAIL VIEW
+function showDetails(code) {
   let item = data.find(i => i.drug_code == code);
-  let qty = parseInt(document.getElementById(`qty-${code}`).value);
 
-  if (!qty) return alert("Enter qty");
+  let html = `
+    <div class="product">
+
+      <button onclick="displayProducts(data)" style="margin-bottom:10px;">⬅ Back</button>
+
+      <b>${item.drug_name}</b><br><br>
+
+      <b>Drug Code:</b> ${item.drug_code}<br>
+      <b>Drug Name:</b> ${item.drug_name}<br>
+      <b>UOM:</b> ${item.uom}<br>
+      <b>Batch:</b> ${item.batch}<br>
+      <b>Expiry:</b> ${item.expiry}<br>
+      <b>Stock:</b> ${item.qty}<br>
+      <b>Sales Rate:</b> ₹${item.price}<br>
+      <b>MRP:</b> ₹${item.mrp}<br><br>
+
+      <input type="number" id="orderQty" placeholder="Enter Qty" 
+      min="1" max="${item.qty}" oninput="calculateAmount(${item.price})">
+
+      <div id="amountBox" style="margin-top:8px; font-weight:bold;"></div>
+
+      <button onclick="addDetailToCart('${item.drug_code}')">Add to Cart</button>
+    </div>
+  `;
+
+  document.getElementById("products").innerHTML = html;
+}
+
+
+// CALCULATE AMOUNT
+function calculateAmount(price) {
+  let qty = document.getElementById("orderQty").value;
+
+  if (!qty) {
+    document.getElementById("amountBox").innerHTML = "";
+    return;
+  }
+
+  let amount = qty * price;
+
+  document.getElementById("amountBox").innerHTML = `Amount: ₹${amount}`;
+}
+
+
+// ADD FROM DETAIL
+function addDetailToCart(code) {
+  let item = data.find(i => i.drug_code == code);
+  let qty = parseInt(document.getElementById("orderQty").value);
+
+  if (!qty) return alert("Enter quantity");
+
+  if (qty > item.qty) {
+    return alert("❌ Order qty cannot exceed stock");
+  }
 
   let existing = cart.find(i => i.drug_code == code);
 
