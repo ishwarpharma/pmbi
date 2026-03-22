@@ -9,38 +9,82 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    .topbar {
+      background: #1E73BE;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .subtext {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .container {
+      padding: 10px;
+    }
+
+    .search-box {
+      position: sticky;
+      top: 0;
+      background: white;
+      padding: 10px;
+      z-index: 10;
+    }
+
+    .search-box input {
+      border: 2px solid #1E73BE;
+      font-size: 16px;
+    }
+
+    .cart {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .place-btn {
+      background: green;
+      margin-top: 5px;
+    }
+  </style>
 </head>
 
 <body>
 
-<header>
-  <h1>Jan Aushadhi Order Portal</h1>
-  <p>Ishwar Pharma Nagpur</p>
-</header>
+<!-- HEADER -->
+<div class="topbar">
+  🏥 Jan Aushadhi Order Portal  
+  <div class="subtext">Ishwar Pharma Nagpur</div>
+</div>
 
 <!-- LOGIN -->
 <div class="login-box" id="loginBox">
-  <input type="text" id="storeCode" placeholder="Store Code">
-  <input type="text" id="city" placeholder="City / District">
-  <input type="number" id="mobile" placeholder="Mobile Number">
+  <input type="text" id="storeCode" placeholder="🏪 Store Code">
+  <input type="text" id="city" placeholder="📍 City / District">
+  <input type="number" id="mobile" placeholder="📱 Mobile Number">
   <button onclick="startApp()">Start Ordering</button>
 </div>
 
-<!-- MAIN -->
-<div id="app" style="display:none;">
-
-  <!-- FILE UPLOAD -->
-  <input type="file" id="excelFile" accept=".xlsx" onchange="handleFile(event)">
+<!-- MAIN APP -->
+<div id="app" style="display:none;" class="container">
 
   <!-- SEARCH -->
-  <input type="text" id="search" placeholder="🔍 Search Drug Code or Name" onkeyup="searchProducts()">
+  <div class="search-box">
+    <input type="text" id="search" placeholder="🔍 Search Drug Code or Name" onkeyup="searchProducts()">
+  </div>
 
+  <!-- PRODUCTS -->
   <div id="products"></div>
 
+  <!-- CART -->
   <div class="cart">
     <h3>🛒 Cart</h3>
     <div id="cartItems"></div>
-    <button onclick="placeOrder()">Place Order</button>
+    <button class="place-btn" onclick="placeOrder()">Place Order</button>
   </div>
 
 </div>
