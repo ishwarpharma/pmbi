@@ -13,22 +13,21 @@ async function loadExcelFromServer() {
 
 // 🔥 CLEAN + SAFE MAPPING
     
-    data = json.map(row => {
+   data = json.map(row => {
   let cleaned = {};
 
   Object.keys(row).forEach(key => {
-    let cleanKey = key.replace(/\s+/g, "").toLowerCase(); // REMOVE ALL SPACES
-    cleaned[cleanKey] = row[key];
+    cleaned[key.trim().toLowerCase()] = row[key];
   });
 
   return {
-    drug_code: cleaned["drugcode"] || "",
-    drug_name: cleaned["drugname"] || "",
-    uom: cleaned["uomname"] || "",
-    batch: cleaned["batchno"] || "",
-    expiry: cleaned["expdate"] || "",
+    drug_code: cleaned["drug code"]?.toString().trim() || "",
+    drug_name: cleaned["drug name"]?.toString().trim() || "",
+    uom: cleaned["uom name"] || "",
+    batch: cleaned["batch no"] || "",
+    expiry: cleaned["exp date"] || "",
     qty: Number(cleaned["qty"]) || 0,
-    price: Number(cleaned["salesrate"]) || 0,
+    price: Number(cleaned["sales rate"]) || 0,
     mrp: Number(cleaned["mrp"]) || 0
   };
 });
