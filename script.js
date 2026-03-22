@@ -1,7 +1,7 @@
 let data = [];
 let cart = [];
 
-// LOAD EXCEL
+// 🚀 LOAD EXCEL
 async function loadExcelFromServer() {
   try {
     const response = await fetch("pmbi.xlsx");
@@ -11,44 +11,43 @@ async function loadExcelFromServer() {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json(sheet);
 
-    // SAFE MAPPING
+    // 🔥 CLEAN + SAFE MAPPING (FIXES BLANK ISSUE)
     data = json.map(row => {
-      const keys = Object.keys(row);
+      let cleaned = {};
 
-      const get = (name) => {
-        let key = keys.find(k => k.trim().toLowerCase() === name.toLowerCase());
-        return key ? row[key] : "";
-      };
+      Object.keys(row).forEach(key => {
+        cleaned[key.trim().toLowerCase()] = row[key];
+      });
 
       return {
-        drug_code: get("Drug Code")?.toString().trim(),
-        drug_name: get("Drug Name")?.toString().trim(),
-        uom: get("Uom Name"),
-        batch: get("Batch No"),
-        expiry: get("Exp Date"),
-        qty: Number(get("QTY")) || 0,
-        price: Number(get("Sales Rate")) || 0,
-        mrp: Number(get("Mrp")) || 0
+        drug_code: cleaned["drug code"]?.toString().trim() || "",
+        drug_name: cleaned["drug name"]?.toString().trim() || "",
+        uom: cleaned["uom name"] || "",
+        batch: cleaned["batch no"] || "",
+        expiry: cleaned["exp date"] || "",
+        qty: Number(cleaned["qty"]) || 0,
+        price: Number(cleaned["sales rate"]) || 0,
+        mrp: Number(cleaned["mrp"]) || 0
       };
     });
 
     // SORT
     data.sort((a, b) => (a.drug_code || "").localeCompare(b.drug_code || ""));
 
-    console.log("Loaded:", data.length);
+    console.log("✅ Loaded:", data.length);
 
-    // SHOW LIST
     displayProducts(data);
 
   } catch (err) {
-    alert("Excel file not found. Upload pmbi.xlsx.");
+    alert("❌ Excel file not found. Upload pmbi.xlsx in repo.");
+    console.error(err);
   }
 }
 
 loadExcelFromServer();
 
 
-// START APP
+// 🚀 START APP
 function startApp() {
   let store = document.getElementById("storeCode").value;
   let city = document.getElementById("city").value;
@@ -63,7 +62,7 @@ function startApp() {
 }
 
 
-// SEARCH
+// 🔍 SEARCH (SMART)
 function searchProducts() {
   let query = document.getElementById("search").value.toLowerCase();
 
@@ -75,8 +74,8 @@ function searchProducts() {
   let results = data.map(item => {
     let score = 0;
 
-    if (item.drug_code?.toLowerCase().includes(query)) score += 2;
-    if (item.drug_name?.toLowerCase().includes(query)) score += 3;
+    if (item.drug_code.toLowerCase().includes(query)) score += 2;
+    if (item.drug_name.toLowerCase().includes(query)) score += 3;
 
     return { ...item, score };
   });
@@ -89,7 +88,7 @@ function searchProducts() {
 }
 
 
-// HIGHLIGHT
+// ✨ HIGHLIGHT
 function highlight(text, query) {
   if (!text) return "";
 
@@ -98,11 +97,13 @@ function highlight(text, query) {
 }
 
 
-// LIST VIEW
+// 📦 LIST VIEW
 function displayProducts(items, query = "") {
   let html = "";
 
   items.slice(0, 100).forEach(item => {
+    if (!item.drug_code && !item.drug_name) return;
+
     html += `
       <div class="product" onclick="showDetails('${item.drug_code}')">
         <b>${highlight(item.drug_code, query)}</b> - 
@@ -115,9 +116,11 @@ function displayProducts(items, query = "") {
 }
 
 
-// DETAIL VIEW
+// 📄 DETAIL VIEW
 function showDetails(code) {
   let item = data.find(i => i.drug_code == code);
+
+  if (!item) return;
 
   let html = `
     <div class="product">
@@ -129,13 +132,13 @@ function showDetails(code) {
       <b>Drug Code:</b> ${item.drug_code}<br>
       <b>Drug Name:</b> ${item.drug_name}<br>
       <b>UOM:</b> ${item.uom}<br>
-      <b>Batch:</b> ${item.batch}<br>
-      <b>Expiry:</b> ${item.expiry}<br>
-      <b>Stock:</b> ${item.qty}<br>
+      <b>Batch No:</b> ${item.batch}<br>
+      <b>Exp Date:</b> ${item.expiry}<br>
+      <b>Stock (QTY):</b> ${item.qty}<br>
       <b>Sales Rate:</b> ₹${item.price}<br>
       <b>MRP:</b> ₹${item.mrp}<br><br>
 
-      <input type="number" id="orderQty" placeholder="Enter Qty" 
+      <input type="number" id="orderQty" placeholder="Enter Qty"
       min="1" max="${item.qty}" oninput="calculateAmount(${item.price})">
 
       <div id="amountBox" style="margin-top:8px; font-weight:bold;"></div>
@@ -148,7 +151,7 @@ function showDetails(code) {
 }
 
 
-// CALCULATE AMOUNT
+// 💰 CALCULATE AMOUNT
 function calculateAmount(price) {
   let qty = document.getElementById("orderQty").value;
 
@@ -163,7 +166,7 @@ function calculateAmount(price) {
 }
 
 
-// ADD FROM DETAIL
+// 🛒 ADD TO CART
 function addDetailToCart(code) {
   let item = data.find(i => i.drug_code == code);
   let qty = parseInt(document.getElementById("orderQty").value);
@@ -186,7 +189,7 @@ function addDetailToCart(code) {
 }
 
 
-// UPDATE CART
+// 🔄 UPDATE CART
 function updateCart() {
   let html = "";
 
@@ -198,7 +201,7 @@ function updateCart() {
 }
 
 
-// PLACE ORDER
+// 📲 PLACE ORDER
 function placeOrder() {
   let store = document.getElementById("storeCode").value;
   let city = document.getElementById("city").value;
