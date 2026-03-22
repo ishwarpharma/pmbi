@@ -1,10 +1,6 @@
 let data = [];
 let cart = [];
 
-fetch('data.json')
-  .then(res => res.json())
-  .then(json => data = json);
-
 // START APP
 function startApp() {
   let store = document.getElementById("storeCode").value;
@@ -19,19 +15,49 @@ function startApp() {
   document.getElementById("app").style.display = "block";
 }
 
+// READ EXCEL
+function handleFile(e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    const dataArray = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(dataArray, { type: 'array' });
+
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    const json = XLSX.utils.sheet_to_json(sheet);
+
+    // MAP YOUR COLUMNS HERE
+    data = json.map(row => ({
+      drug_code: row["Drug Code"] || row["B"],
+      drug_name: row["Drug Name"] || row["C"],
+      batch: row["Batch"] || "",
+      expiry: row["Expiry"] || "",
+      qty: row["Qty"] || 0,
+      price: row["Selling Price"] || 0
+    }));
+
+    alert("Excel Loaded Successfully!");
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
 // SEARCH
 function searchProducts() {
   let query = document.getElementById("search").value.toLowerCase();
 
   let results = data.filter(item =>
-    item.drug_code.toLowerCase() === query ||
-    item.drug_name.toLowerCase().includes(query)
+    item.drug_code?.toLowerCase() === query ||
+    item.drug_name?.toLowerCase().includes(query)
   );
 
   displayProducts(results);
 }
 
-// DISPLAY PRODUCTS
+// DISPLAY
 function displayProducts(items) {
   let html = "";
 
@@ -56,7 +82,7 @@ function displayProducts(items) {
 
 // ADD TO CART
 function addToCart(code) {
-  let item = data.find(i => i.drug_code === code);
+  let item = data.find(i => i.drug_code == code);
   let qty = document.getElementById(`qty-${code}`).value;
 
   if (!qty) return alert("Enter qty");
@@ -77,7 +103,7 @@ function updateCart() {
   document.getElementById("cartItems").innerHTML = html;
 }
 
-// PLACE ORDER
+// ORDER
 function placeOrder() {
   let store = document.getElementById("storeCode").value;
   let city = document.getElementById("city").value;
