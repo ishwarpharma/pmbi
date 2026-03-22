@@ -1,7 +1,39 @@
 let data = [];
 let cart = [];
 
-// START APP
+// 🚀 LOAD EXCEL AUTOMATICALLY FROM GITHUB
+async function loadExcelFromServer() {
+  try {
+    const response = await fetch("pmbi.xlsx");
+    const arrayBuffer = await response.arrayBuffer();
+
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet);
+
+    // ✅ EXACT MAPPING BASED ON YOUR FILE
+    data = json.map(row => ({
+      drug_code: row["Drug Code"]?.toString().trim(),
+      drug_name: row["Drug Name"]?.toString().trim(),
+      batch: row["Batch No"]?.toString().trim(),
+      expiry: row["Exp Date"]?.toString().trim(),
+      qty: Number(row["QTY"]) || 0,
+      price: Number(row["Sales Rate"]) || 0
+    }));
+
+    console.log("✅ Excel Loaded:", data.length, "items");
+
+  } catch (error) {
+    alert("Error loading Excel file. Make sure pmbi.xlsx is uploaded.");
+    console.error(error);
+  }
+}
+
+// Load automatically
+loadExcelFromServer();
+
+
+// 🚀 START APP
 function startApp() {
   let store = document.getElementById("storeCode").value;
   let mobile = document.getElementById("mobile").value;
@@ -15,53 +47,30 @@ function startApp() {
   document.getElementById("app").style.display = "block";
 }
 
-// READ EXCEL
-function handleFile(e) {
-  const file = e.target.files[0];
-  const reader = new FileReader();
 
-  reader.onload = function (e) {
-    const dataArray = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(dataArray, { type: 'array' });
-
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-
-    const json = XLSX.utils.sheet_to_json(sheet);
-
-    // MAP YOUR COLUMNS HERE
-    data = json.map(row => ({
-      drug_code: row["Drug Code"] || row["B"],
-      drug_name: row["Drug Name"] || row["C"],
-      batch: row["Batch"] || "",
-      expiry: row["Expiry"] || "",
-      qty: row["Qty"] || 0,
-      price: row["Selling Price"] || 0
-    }));
-
-    alert("Excel Loaded Successfully!");
-  };
-
-  reader.readAsArrayBuffer(file);
-}
-
-// SEARCH
+// 🔍 SEARCH (IMPROVED)
 function searchProducts() {
   let query = document.getElementById("search").value.toLowerCase();
 
+  if (!query) {
+    document.getElementById("products").innerHTML = "";
+    return;
+  }
+
   let results = data.filter(item =>
-    item.drug_code?.toLowerCase() === query ||
+    item.drug_code?.toLowerCase().includes(query) ||
     item.drug_name?.toLowerCase().includes(query)
   );
 
   displayProducts(results);
 }
 
-// DISPLAY
+
+// 📦 DISPLAY PRODUCTS
 function displayProducts(items) {
   let html = "";
 
-  items.forEach(item => {
+  items.slice(0, 50).forEach(item => {  // limit for performance
     html += `
       <div class="product">
         <b>${item.drug_name}</b><br>
@@ -80,39 +89,57 @@ function displayProducts(items) {
   document.getElementById("products").innerHTML = html;
 }
 
-// ADD TO CART
+
+// 🛒 ADD TO CART (FIXED DUPLICATES)
 function addToCart(code) {
   let item = data.find(i => i.drug_code == code);
-  let qty = document.getElementById(`qty-${code}`).value;
+  let qty = parseInt(document.getElementById(`qty-${code}`).value);
 
   if (!qty) return alert("Enter qty");
 
-  cart.push({ ...item, order_qty: qty });
+  let existing = cart.find(i => i.drug_code == code);
+
+  if (existing) {
+    existing.order_qty += qty;
+  } else {
+    cart.push({ ...item, order_qty: qty });
+  }
 
   updateCart();
 }
 
-// UPDATE CART
+
+// 🔄 UPDATE CART
 function updateCart() {
   let html = "";
 
-  cart.forEach(item => {
-    html += `<div class="cart-item">${item.drug_name} x ${item.order_qty}</div>`;
+  cart.forEach((item, i) => {
+    html += `
+      <div class="cart-item">
+        ${i+1}. ${item.drug_name} × ${item.order_qty}
+      </div>
+    `;
   });
 
   document.getElementById("cartItems").innerHTML = html;
 }
 
-// ORDER
+
+// 📲 PLACE ORDER (CLEAN FORMAT)
 function placeOrder() {
   let store = document.getElementById("storeCode").value;
   let city = document.getElementById("city").value;
   let mobile = document.getElementById("mobile").value;
 
-  let message = `PMBI ORDER\nStore: ${store}\nCity: ${city}\nMobile: ${mobile}\n\n`;
+  if (cart.length === 0) {
+    alert("Cart is empty");
+    return;
+  }
 
-  cart.forEach(item => {
-    message += `${item.drug_name} - ${item.order_qty}\n`;
+  let message = `🧾 PMBI ORDER\n\nStore: ${store}\nCity: ${city}\nMobile: ${mobile}\n\n`;
+
+  cart.forEach((item, i) => {
+    message += `${i+1}. ${item.drug_name}\nQty: ${item.order_qty}\n\n`;
   });
 
   let url = `https://wa.me/919324824900?text=${encodeURIComponent(message)}`;
