@@ -11,6 +11,7 @@ async function loadExcelFromServer() {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json(sheet);
 
+    // SAFE MAPPING
     data = json.map(row => {
       const keys = Object.keys(row);
 
@@ -29,7 +30,13 @@ async function loadExcelFromServer() {
       };
     });
 
-    console.log("Excel Loaded:", data.length);
+    // 🔥 SORT BY DRUG CODE
+    data.sort((a, b) => (a.drug_code || "").localeCompare(b.drug_code || ""));
+
+    console.log("Loaded:", data.length);
+
+    // 👉 SHOW ALL BY DEFAULT
+    displayProducts(data);
 
   } catch (err) {
     alert("Excel file not found. Upload pmbi.xlsx.");
@@ -38,7 +45,8 @@ async function loadExcelFromServer() {
 
 loadExcelFromServer();
 
-// START APP (ALLOW WITHOUT DETAILS)
+
+// START APP
 function startApp() {
   let store = document.getElementById("storeCode").value;
   let city = document.getElementById("city").value;
@@ -52,32 +60,52 @@ function startApp() {
   document.getElementById("app").style.display = "block";
 }
 
-// SEARCH
+
+// 🔍 SEARCH WITH RANKING + HIGHLIGHT
 function searchProducts() {
   let query = document.getElementById("search").value.toLowerCase();
 
   if (!query) {
-    document.getElementById("products").innerHTML = "";
+    displayProducts(data);
     return;
   }
 
-  let results = data.filter(item =>
-    item.drug_code?.toLowerCase().includes(query) ||
-    item.drug_name?.toLowerCase().includes(query)
-  );
+  let results = data.map(item => {
+    let score = 0;
 
-  displayProducts(results);
+    if (item.drug_code?.toLowerCase().includes(query)) score += 2;
+    if (item.drug_name?.toLowerCase().includes(query)) score += 3;
+
+    return { ...item, score };
+  });
+
+  // FILTER + SORT BY BEST MATCH
+  results = results
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  displayProducts(results, query);
 }
 
-// DISPLAY
-function displayProducts(items) {
+
+// ✨ HIGHLIGHT FUNCTION
+function highlight(text, query) {
+  if (!text) return "";
+
+  let regex = new RegExp(`(${query})`, "gi");
+  return text.replace(regex, `<span style="background:yellow">$1</span>`);
+}
+
+
+// DISPLAY PRODUCTS
+function displayProducts(items, query = "") {
   let html = "";
 
-  items.slice(0, 50).forEach(item => {
+  items.slice(0, 100).forEach(item => {
     html += `
       <div class="product">
-        <b>${item.drug_name}</b><br>
-        Code: ${item.drug_code}<br>
+        <b>${highlight(item.drug_name, query)}</b><br>
+        Code: ${highlight(item.drug_code, query)}<br>
         Batch: ${item.batch}<br>
         Expiry: ${item.expiry}<br>
         Stock: ${item.qty}<br>
@@ -91,6 +119,7 @@ function displayProducts(items) {
 
   document.getElementById("products").innerHTML = html;
 }
+
 
 // ADD TO CART
 function addToCart(code) {
@@ -110,6 +139,7 @@ function addToCart(code) {
   updateCart();
 }
 
+
 // UPDATE CART
 function updateCart() {
   let html = "";
@@ -121,7 +151,8 @@ function updateCart() {
   document.getElementById("cartItems").innerHTML = html;
 }
 
-// PLACE ORDER (BLOCK IF DETAILS MISSING)
+
+// PLACE ORDER
 function placeOrder() {
   let store = document.getElementById("storeCode").value;
   let city = document.getElementById("city").value;
