@@ -11,26 +11,28 @@ async function loadExcelFromServer() {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json(sheet);
 
-    // 🔥 CLEAN + SAFE MAPPING
+// 🔥 CLEAN + SAFE MAPPING
+    
     data = json.map(row => {
-      let cleaned = {};
+  let cleaned = {};
 
-      Object.keys(row).forEach(key => {
-        cleaned[key.trim().toLowerCase()] = row[key];
-      });
+  Object.keys(row).forEach(key => {
+    let cleanKey = key.replace(/\s+/g, "").toLowerCase(); // REMOVE ALL SPACES
+    cleaned[cleanKey] = row[key];
+  });
 
-      return {
-        drug_code: cleaned["drug code"]?.toString().trim() || "",
-        drug_name: cleaned["drug name"]?.toString().trim() || "",
-        uom: cleaned["uom name"] || "",
-        batch: cleaned["batch no"] || "",
-        expiry: cleaned["exp date"] || "",
-        qty: Number(cleaned["qty"]) || 0,
-        price: Number(cleaned["sales rate"]) || 0,
-        mrp: Number(cleaned["mrp"]) || 0
-      };
-    });
-
+  return {
+    drug_code: cleaned["drugcode"] || "",
+    drug_name: cleaned["drugname"] || "",
+    uom: cleaned["uomname"] || "",
+    batch: cleaned["batchno"] || "",
+    expiry: cleaned["expdate"] || "",
+    qty: Number(cleaned["qty"]) || 0,
+    price: Number(cleaned["salesrate"]) || 0,
+    mrp: Number(cleaned["mrp"]) || 0
+  };
+});
+      
     // SORT
     data.sort((a, b) => (a.drug_code || "").localeCompare(b.drug_code || ""));
 
