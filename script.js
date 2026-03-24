@@ -37,7 +37,7 @@ async function loadExcelFromServer() {
     data = rows.map(r => ({
       drug_code: r[1]?.toString().trim(),
       drug_name: r[2]?.toString().trim(),
-      uom: r[3] || "",   // ✅ FIXED (UOM BACK)
+      uom: r[3] || "",   // ✅ Pack column restored
       batch: r[4] || "",
       expiry: formatExcelDate(r[5]),
       qty: Number(r[6]) || 0,
@@ -63,27 +63,46 @@ function startApp() {
 }
 
 
-// ✨ HIGHLIGHT
+// ✨ MULTI WORD HIGHLIGHT
 function highlight(text, query) {
   if (!text || !query) return text || "";
 
-  let escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  let regex = new RegExp(`(${escaped})`, "gi");
+  let words = query.split(" ").filter(w => w);
+  let result = text;
 
-  return text.toString().replace(regex, `<span class="highlight">$1</span>`);
+  words.forEach(word => {
+    let escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let regex = new RegExp(`(${escaped})`, "gi");
+    result = result.replace(regex, `<span class="highlight">$1</span>`);
+  });
+
+  return result;
 }
 
 
-// 🔍 SEARCH
+// 🔍 SMART SEARCH (MULTI WORD + RANKING)
 function searchProducts() {
-  let query = document.getElementById("search").value.toLowerCase();
+  let query = document.getElementById("search").value.toLowerCase().trim();
 
   if (!query) return displayProducts(data);
 
-  let results = data.filter(item =>
-    item.drug_code?.toLowerCase().includes(query) ||
-    item.drug_name?.toLowerCase().includes(query)
-  );
+  let words = query.split(" ").filter(w => w);
+
+  let results = data.map(item => {
+    let score = 0;
+
+    let text = (item.drug_code + " " + item.drug_name).toLowerCase();
+
+    words.forEach(word => {
+      if (text.includes(word)) score += 2;
+    });
+
+    return { ...item, score };
+  });
+
+  results = results
+    .filter(i => i.score > 0)
+    .sort((a, b) => b.score - a.score);
 
   displayProducts(results, query);
 }
@@ -96,7 +115,7 @@ function resetSearch() {
 }
 
 
-// 📦 LIST
+// 📦 LIST VIEW
 function displayProducts(items, query = "") {
   let html = "";
 
@@ -127,8 +146,7 @@ function showDetails(code) {
       <b>${i.drug_name}</b><br><br>
 
       <b>Drug Code:</b> ${i.drug_code}<br>
-
-      <b>Pack:</b> ${i.uom}<br> <!-- ✅ FIXED -->
+      <b>Pack:</b> ${i.uom}<br>
 
       <b>Batch:</b> ${i.batch}<br>
       <b>Expiry:</b> ${i.expiry}<br>
@@ -155,7 +173,10 @@ function showDetails(code) {
 function calc(price) {
   let q = document.getElementById("qty").value;
 
-  if (!q) return document.getElementById("amt").innerHTML = "";
+  if (!q) {
+    document.getElementById("amt").innerHTML = "";
+    return;
+  }
 
   document.getElementById("amt").innerHTML =
     `Amount: ₹ ${round2(q * price)}`;
