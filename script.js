@@ -37,7 +37,7 @@ async function loadExcelFromServer() {
     data = rows.map(r => ({
       drug_code: r[1]?.toString().trim(),
       drug_name: r[2]?.toString().trim(),
-      uom: r[3] || "",   // ✅ Pack column restored
+      uom: r[3] || "",
       batch: r[4] || "",
       expiry: formatExcelDate(r[5]),
       qty: Number(r[6]) || 0,
@@ -63,34 +63,36 @@ function startApp() {
 }
 
 
-// ✨ MULTI WORD HIGHLIGHT
+// ✨ CLEAN HIGHLIGHT (NO BUG)
 function highlight(text, query) {
   if (!text || !query) return text || "";
 
-  let words = query.split(" ").filter(w => w);
-  let result = text;
+  let cleanText = text.toString();
+  let words = query.split(" ").filter(w => w.length > 1); // ignore small words
 
   words.forEach(word => {
     let escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    let regex = new RegExp(`(${escaped})`, "gi");
-    result = result.replace(regex, `<span class="highlight">$1</span>`);
+    let regex = new RegExp(escaped, "gi");
+
+    cleanText = cleanText.replace(regex, match =>
+      `<span class="highlight">${match}</span>`
+    );
   });
 
-  return result;
+  return cleanText;
 }
 
 
-// 🔍 SMART SEARCH (MULTI WORD + RANKING)
+// 🔍 SMART SEARCH
 function searchProducts() {
   let query = document.getElementById("search").value.toLowerCase().trim();
 
   if (!query) return displayProducts(data);
 
-  let words = query.split(" ").filter(w => w);
+  let words = query.split(" ").filter(w => w.length > 1);
 
   let results = data.map(item => {
     let score = 0;
-
     let text = (item.drug_code + " " + item.drug_name).toLowerCase();
 
     words.forEach(word => {
@@ -124,7 +126,7 @@ function displayProducts(items, query = "") {
 
     html += `
       <div class="product" onclick="showDetails('${item.drug_code}')">
-        <b>${highlight(item.drug_code, query)}</b> - 
+        ${highlight(item.drug_code, query)} - 
         ${highlight(item.drug_name, query)}
       </div>
     `;
@@ -145,15 +147,14 @@ function showDetails(code) {
 
       <b>${i.drug_name}</b><br><br>
 
-      <b>Drug Code:</b> ${i.drug_code}<br>
-      <b>Pack:</b> ${i.uom}<br>
+      Drug Code: ${i.drug_code}<br>
+      Pack: ${i.uom}<br>
+      Batch: ${i.batch}<br>
+      Expiry: ${i.expiry}<br>
 
-      <b>Batch:</b> ${i.batch}<br>
-      <b>Expiry:</b> ${i.expiry}<br>
-
-      <span style="color:red"><b>Stock:</b> ${i.qty}</span><br>
-      <span style="color:green"><b>Rate:</b> ₹ ${round2(i.price)}</span><br>
-      <b>MRP:</b> ₹ ${round2(i.mrp)}<br><br>
+      <span style="color:red">Stock: ${i.qty}</span><br>
+      <span style="color:green">Rate: ₹ ${round2(i.price)}</span><br>
+      MRP: ₹ ${round2(i.mrp)}<br><br>
 
       <input type="number" id="qty" placeholder="Enter Qty"
         min="1" max="${i.qty}" oninput="calc(${i.price})">
@@ -173,10 +174,7 @@ function showDetails(code) {
 function calc(price) {
   let q = document.getElementById("qty").value;
 
-  if (!q) {
-    document.getElementById("amt").innerHTML = "";
-    return;
-  }
+  if (!q) return document.getElementById("amt").innerHTML = "";
 
   document.getElementById("amt").innerHTML =
     `Amount: ₹ ${round2(q * price)}`;
@@ -213,7 +211,7 @@ function openCart() {
 
     html += `
       <div class="cart-item">
-        <b>${i.drug_name}</b><br>
+        ${i.drug_name}<br>
 
         Qty:
         <input type="number" value="${i.order_qty}" 
@@ -255,7 +253,7 @@ function closeCart() {
 }
 
 
-// 📲 ORDER
+// 📲 PLACE ORDER
 function place() {
   let msg = "🧾 PMBI ORDER\n\n";
   let total = 0;
