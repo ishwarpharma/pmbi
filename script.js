@@ -9,38 +9,34 @@ async function loadExcelFromServer() {
 
     const workbook = XLSX.read(arrayBuffer, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(sheet);
 
-// 🔥 CLEAN + SAFE MAPPING
+    // 👉 READ RAW ROWS (IMPORTANT FOR YOUR FILE)
+    let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-const workbook = XLSX.read(arrayBuffer, { type: "array" });
-const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    // 👉 REMOVE EMPTY ROWS
+    rows = rows.filter(r => r.length > 3);
 
-// READ RAW ROWS
-let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    // 👉 REMOVE HEADER ROW
+    rows.shift();
 
-// 🔥 REMOVE EMPTY ROWS
-rows = rows.filter(r => r.length > 3);
+    // 👉 MAP DATA (COLUMN FIXED AS PER YOUR EXCEL)
+    data = rows.map(r => ({
+      drug_code: r[1] ? r[1].toString().trim() : "",
+      drug_name: r[2] ? r[2].toString().trim() : "",
+      uom: r[3] || "",
+      batch: r[4] || "",
+      expiry: r[5] || "",
+      qty: Number(r[6]) || 0,
+      price: Number(r[8]) || 0,
+      mrp: Number(r[9]) || 0
+    }));
 
-// 🔥 REMOVE HEADER ROW
-rows.shift();
-
-data = rows.map(r => ({
-  drug_code: r[1] ? r[1].toString().trim() : "",
-  drug_name: r[2] ? r[2].toString().trim() : "",
-  uom: r[3] || "",
-  batch: r[4] || "",
-  expiry: r[5] || "",
-  qty: Number(r[6]) || 0,
-  price: Number(r[8]) || 0,
-  mrp: Number(r[9]) || 0
-}));
-          
-    // SORT
+    // 👉 SORT
     data.sort((a, b) => (a.drug_code || "").localeCompare(b.drug_code || ""));
 
     console.log("✅ Loaded:", data.length);
 
+    // 👉 SHOW LIST
     displayProducts(data);
 
   } catch (err) {
@@ -93,22 +89,21 @@ function searchProducts() {
 }
 
 
-// ✨ HIGHLIGHT (FIXED)
+// ✨ HIGHLIGHT
 function highlight(text, query) {
-  if (!text) return "";
+  if (!text || !query) return text || "";
 
   let regex = new RegExp(`(${query})`, "gi");
   return text.replace(regex, `<span class="highlight">$1</span>`);
 }
 
 
-// 📦 LIST VIEW (FIXED BLANK ROWS)
+// 📦 LIST VIEW (ONLY CODE + NAME)
 function displayProducts(items, query = "") {
   let html = "";
 
   items.slice(0, 100).forEach(item => {
 
-    // 🔥 FIX: skip invalid rows
     if (!item.drug_code || !item.drug_name) return;
 
     html += `
@@ -123,7 +118,7 @@ function displayProducts(items, query = "") {
 }
 
 
-// 📄 DETAIL VIEW (FIXED BACK BUTTON + STOCK)
+// 📄 DETAIL VIEW
 function showDetails(code) {
   let item = data.find(i => i.drug_code == code);
   if (!item) return;
@@ -144,8 +139,11 @@ function showDetails(code) {
       <b>Sales Rate:</b> ₹${item.price}<br>
       <b>MRP:</b> ₹${item.mrp}<br><br>
 
-      <input type="number" id="orderQty" placeholder="Enter Qty"
-      min="1" max="${item.qty}" oninput="calculateAmount(${item.price})">
+      <input type="number" id="orderQty"
+        placeholder="Enter Qty"
+        min="1"
+        max="${item.qty}"
+        oninput="calculateAmount(${item.price})">
 
       <div id="amountBox" style="margin-top:8px; font-weight:bold;"></div>
 
@@ -203,7 +201,7 @@ function updateCart() {
   let html = "";
 
   cart.forEach((item, i) => {
-    html += `${i+1}. ${item.drug_name} × ${item.order_qty}<br>`;
+    html += `<div class="cart-item">${i+1}. ${item.drug_name} × ${item.order_qty}</div>`;
   });
 
   document.getElementById("cartItems").innerHTML = html;
