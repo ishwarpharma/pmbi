@@ -22,28 +22,35 @@ function round2(num) {
 
 // 🚀 LOAD EXCEL
 async function loadExcelFromServer() {
-  const res = await fetch("pmbi.xlsx");
-  const buffer = await res.arrayBuffer();
+  try {
+    const res = await fetch("pmbi.xlsx");
+    const buffer = await res.arrayBuffer();
 
-  const wb = XLSX.read(buffer, { type: "array" });
-  const sheet = wb.Sheets[wb.SheetNames[0]];
+    const wb = XLSX.read(buffer, { type: "array" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
 
-  let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-  rows = rows.filter(r => r.length > 3);
-  rows.shift();
+    rows = rows.filter(r => r.length > 3);
+    rows.shift();
 
-  data = rows.map(r => ({
-    drug_code: r[1]?.toString().trim(),
-    drug_name: r[2]?.toString().trim(),
-    batch: r[4] || "",
-    expiry: formatExcelDate(r[5]),
-    qty: Number(r[6]) || 0,
-    price: Number(r[8]) || 0,
-    mrp: Number(r[9]) || 0
-  }));
+    data = rows.map(r => ({
+      drug_code: r[1]?.toString().trim(),
+      drug_name: r[2]?.toString().trim(),
+      uom: r[3] || "",   // ✅ FIXED (UOM BACK)
+      batch: r[4] || "",
+      expiry: formatExcelDate(r[5]),
+      qty: Number(r[6]) || 0,
+      price: Number(r[8]) || 0,
+      mrp: Number(r[9]) || 0
+    }));
 
-  displayProducts(data);
+    displayProducts(data);
+
+  } catch (err) {
+    alert("❌ Excel file not found.");
+    console.error(err);
+  }
 }
 
 loadExcelFromServer();
@@ -56,22 +63,33 @@ function startApp() {
 }
 
 
-// 🔍 SEARCH
-function searchProducts() {
-  let q = document.getElementById("search").value.toLowerCase();
+// ✨ HIGHLIGHT
+function highlight(text, query) {
+  if (!text || !query) return text || "";
 
-  if (!q) return displayProducts(data);
+  let escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let regex = new RegExp(`(${escaped})`, "gi");
 
-  let res = data.filter(i =>
-    i.drug_code?.toLowerCase().includes(q) ||
-    i.drug_name?.toLowerCase().includes(q)
-  );
-
-  displayProducts(res, q);
+  return text.toString().replace(regex, `<span class="highlight">$1</span>`);
 }
 
 
-// 🔄 RESET SEARCH
+// 🔍 SEARCH
+function searchProducts() {
+  let query = document.getElementById("search").value.toLowerCase();
+
+  if (!query) return displayProducts(data);
+
+  let results = data.filter(item =>
+    item.drug_code?.toLowerCase().includes(query) ||
+    item.drug_name?.toLowerCase().includes(query)
+  );
+
+  displayProducts(results, query);
+}
+
+
+// 🔄 RESET
 function resetSearch() {
   document.getElementById("search").value = "";
   displayProducts(data);
@@ -79,15 +97,16 @@ function resetSearch() {
 
 
 // 📦 LIST
-function displayProducts(items, q = "") {
+function displayProducts(items, query = "") {
   let html = "";
 
-  items.slice(0, 100).forEach(i => {
-    if (!i.drug_code || !i.drug_name) return;
+  items.slice(0, 100).forEach(item => {
+    if (!item.drug_code || !item.drug_name) return;
 
     html += `
-      <div class="product" onclick="showDetails('${i.drug_code}')">
-        <b>${i.drug_code}</b> - ${i.drug_name}
+      <div class="product" onclick="showDetails('${item.drug_code}')">
+        <b>${highlight(item.drug_code, query)}</b> - 
+        ${highlight(item.drug_name, query)}
       </div>
     `;
   });
@@ -107,20 +126,23 @@ function showDetails(code) {
 
       <b>${i.drug_name}</b><br><br>
 
-      Drug Code: ${i.drug_code}<br>
-      Batch: ${i.batch}<br>
-      Expiry: ${i.expiry}<br>
+      <b>Drug Code:</b> ${i.drug_code}<br>
 
-      <span style="color:red">Stock: ${i.qty}</span><br>
-      <span style="color:green">Rate: ₹ ${round2(i.price)}</span><br>
-      MRP: ₹ ${round2(i.mrp)}<br><br>
+      <b>Pack:</b> ${i.uom}<br> <!-- ✅ FIXED -->
+
+      <b>Batch:</b> ${i.batch}<br>
+      <b>Expiry:</b> ${i.expiry}<br>
+
+      <span style="color:red"><b>Stock:</b> ${i.qty}</span><br>
+      <span style="color:green"><b>Rate:</b> ₹ ${round2(i.price)}</span><br>
+      <b>MRP:</b> ₹ ${round2(i.mrp)}<br><br>
 
       <input type="number" id="qty" placeholder="Enter Qty"
         min="1" max="${i.qty}" oninput="calc(${i.price})">
 
-      <div id="amt"></div>
+      <div id="amt" style="margin-top:8px;font-weight:bold;"></div>
 
-      <button onclick="add('${i.drug_code}')">Add</button>
+      <button onclick="add('${i.drug_code}')">Add to Cart</button>
 
     </div>
   `;
@@ -132,6 +154,7 @@ function showDetails(code) {
 // 💰 AMOUNT
 function calc(price) {
   let q = document.getElementById("qty").value;
+
   if (!q) return document.getElementById("amt").innerHTML = "";
 
   document.getElementById("amt").innerHTML =
@@ -147,18 +170,19 @@ function add(code) {
   if (!q) return alert("Enter qty");
   if (q > i.qty) return alert("Exceeds stock");
 
-  let e = cart.find(x => x.drug_code == code);
+  let existing = cart.find(x => x.drug_code == code);
 
-  if (e) e.order_qty += q;
+  if (existing) existing.order_qty += q;
   else cart.push({ ...i, order_qty: q });
 
-  alert("Added to cart");
+  alert("✅ Added to cart");
 }
 
 
 // 👁 VIEW CART
 function openCart() {
-  let html = `<div class="product"><button onclick="closeCart()">Close</button><br><br>`;
+  let html = `<div class="product">
+    <button class="back-btn" onclick="closeCart()">⬅ Back</button><br><br>`;
 
   let total = 0;
 
@@ -167,16 +191,17 @@ function openCart() {
     total += val;
 
     html += `
-      <div>
+      <div class="cart-item">
         <b>${i.drug_name}</b><br>
 
         Qty:
-        <input value="${i.order_qty}" type="number"
+        <input type="number" value="${i.order_qty}" 
           onchange="edit(${idx}, this.value)">
 
-        × ₹ ${round2(i.price)} = ₹ ${round2(val)}
+        × ₹ ${round2(i.price)} = 
+        <b>₹ ${round2(val)}</b>
 
-        <span onclick="del(${idx})" style="color:red">❌</span>
+        <span onclick="del(${idx})" style="color:red; float:right; cursor:pointer;">❌</span>
       </div><hr>
     `;
   });
@@ -188,17 +213,17 @@ function openCart() {
 }
 
 
-// ❌ DELETE
-function del(i) {
-  cart.splice(i, 1);
+// ✏️ EDIT
+function edit(index, qty) {
+  if (qty <= 0) return;
+  cart[index].order_qty = parseInt(qty);
   openCart();
 }
 
 
-// ✏️ EDIT
-function edit(i, q) {
-  if (q <= 0) return;
-  cart[i].order_qty = parseInt(q);
+// ❌ DELETE
+function del(index) {
+  cart.splice(index, 1);
   openCart();
 }
 
@@ -211,7 +236,7 @@ function closeCart() {
 
 // 📲 ORDER
 function place() {
-  let msg = "PMBI ORDER\n\n";
+  let msg = "🧾 PMBI ORDER\n\n";
   let total = 0;
 
   cart.forEach((i, idx) => {
@@ -220,6 +245,7 @@ function place() {
 
     msg += `${idx+1}. ${i.drug_name}
 Qty: ${i.order_qty}
+Pack: ${i.uom}
 Value: ₹ ${round2(val)}
 
 `;
