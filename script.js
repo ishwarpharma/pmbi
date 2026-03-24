@@ -2,7 +2,7 @@ let data = [];
 let cart = [];
 
 
-// 📅 FORMAT DATE
+// 📅 DATE FIX
 function formatExcelDate(excelDate) {
   if (!excelDate) return "";
 
@@ -12,6 +12,12 @@ function formatExcelDate(excelDate) {
   }
 
   return excelDate;
+}
+
+
+// 💰 ROUND FIX (IMPORTANT)
+function round2(num) {
+  return Number(num).toFixed(2);
 }
 
 
@@ -32,7 +38,6 @@ async function loadExcelFromServer() {
     data = rows.map(r => ({
       drug_code: r[1]?.toString().trim(),
       drug_name: r[2]?.toString().trim(),
-      uom: "Pack",
       batch: r[4] || "",
       expiry: formatExcelDate(r[5]),
       qty: Number(r[6]) || 0,
@@ -88,7 +93,7 @@ function highlight(text, query) {
 }
 
 
-// 📦 LIST VIEW
+// 📦 LIST
 function displayProducts(items, query = "") {
   let html = "";
 
@@ -119,7 +124,8 @@ function showDetails(code) {
       <b>${item.drug_name}</b><br><br>
 
       <b>Drug Code:</b> ${item.drug_code}<br>
-      <b>Pack:</b> ${item.uom}<br>
+      <b>Pack</b><br> <!-- ✅ FIXED -->
+
       <b>Batch:</b> ${item.batch}<br>
       <b>Expiry:</b> ${item.expiry}<br>
 
@@ -127,12 +133,13 @@ function showDetails(code) {
       <span style="color:#d9534f">${item.qty}</span><br>
 
       <b style="color:#28a745">Rate:</b> 
-      <span style="color:#28a745">₹ ${item.price}</span><br>
+      <span style="color:#28a745">₹ ${round2(item.price)}</span><br>
 
-      <b>MRP:</b> ₹ ${item.mrp}<br><br>
+      <b>MRP:</b> ₹ ${round2(item.mrp)}<br><br>
 
       <input type="number" id="orderQty" placeholder="Enter Qty"
-        min="1" max="${item.qty}" oninput="calculateAmount(${item.price})">
+        min="1" max="${item.qty}" 
+        oninput="calculateAmount(${item.price})">
 
       <div id="amountBox" style="margin-top:8px;font-weight:bold;"></div>
 
@@ -147,17 +154,23 @@ function showDetails(code) {
 }
 
 
-// 💰 AMOUNT
+// 💰 AMOUNT FIXED
 function calculateAmount(price) {
   let qty = document.getElementById("orderQty").value;
-  if (!qty) return document.getElementById("amountBox").innerHTML = "";
+
+  if (!qty) {
+    document.getElementById("amountBox").innerHTML = "";
+    return;
+  }
+
+  let amount = qty * price;
 
   document.getElementById("amountBox").innerHTML =
-    `Amount: ₹ ${qty * price}`;
+    `Amount: ₹ ${round2(amount)}`;
 }
 
 
-// 🛒 ADD (MERGE IF EXISTS)
+// 🛒 ADD
 function addDetailToCart(code) {
   let item = data.find(i => i.drug_code == code);
   let qty = parseInt(document.getElementById("orderQty").value);
@@ -177,7 +190,7 @@ function addDetailToCart(code) {
 }
 
 
-// ✏️ UPDATE QTY
+// ✏️ EDIT QTY
 function updateQty(index, newQty) {
   let item = cart[index];
 
@@ -190,14 +203,14 @@ function updateQty(index, newQty) {
 }
 
 
-// ❌ REMOVE ITEM
+// ❌ REMOVE
 function removeItem(index) {
   cart.splice(index, 1);
   updateCart();
 }
 
 
-// 🧾 CART UI (EDIT + REMOVE + TOTAL)
+// 🧾 CART
 function updateCart() {
   let html = "";
   let total = 0;
@@ -217,11 +230,11 @@ function updateCart() {
           onchange="updateQty(${i}, this.value)"
           style="width:60px; margin:5px;">
 
-        × ₹ ${item.price} = 
-        <b>₹ ${value.toFixed(2)}</b>
+        × ₹ ${round2(item.price)} = 
+        <b>₹ ${round2(value)}</b>
 
         <span onclick="removeItem(${i})"
-          style="color:red; font-weight:bold; float:right; cursor:pointer;">
+          style="color:red; float:right; cursor:pointer;">
           ❌
         </span>
 
@@ -229,13 +242,13 @@ function updateCart() {
     `;
   });
 
-  html += `<hr><b>Total: ₹ ${total.toFixed(2)}</b>`;
+  html += `<hr><b>Total: ₹ ${round2(total)}</b>`;
 
   document.getElementById("cartItems").innerHTML = html;
 }
 
 
-// 📲 PLACE ORDER
+// 📲 ORDER
 function placeOrder() {
   if (cart.length === 0) return alert("Cart empty");
 
@@ -248,13 +261,13 @@ function placeOrder() {
 
     message += `${i+1}. ${item.drug_name}
 Qty: ${item.order_qty}
-Rate: ₹ ${item.price}
-Value: ₹ ${value}
+Rate: ₹ ${round2(item.price)}
+Value: ₹ ${round2(value)}
 
 `;
   });
 
-  message += `Total: ₹ ${total}`;
+  message += `Total: ₹ ${round2(total)}`;
 
   window.open(`https://wa.me/919324824900?text=${encodeURIComponent(message)}`);
 }
