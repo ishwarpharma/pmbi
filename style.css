@@ -58,7 +58,7 @@ button:active {
   transform: scale(0.98);
 }
 
-/* DISABLED BUTTON (OUT OF STOCK) */
+/* DISABLED BUTTON */
 button:disabled {
   background: #ccc;
   cursor: not-allowed;
@@ -80,7 +80,7 @@ button:disabled {
   padding-left: 15px;
 }
 
-/* PRODUCT LIST (CLICKABLE ROW) */
+/* PRODUCT LIST */
 .product {
   background: white;
   margin: 10px;
@@ -96,32 +96,32 @@ button:disabled {
   background: #f1f7ff;
 }
 
-/* PRODUCT TEXT */
+/* PRODUCT TITLE */
 .product b {
   color: #1E73BE;
 }
 
-/* DETAIL VIEW INPUT */
+/* DETAIL INPUT */
 .product input {
   width: 100%;
   margin-top: 10px;
 }
 
-/* DETAIL VIEW BUTTON */
+/* DETAIL BUTTON */
 .product button {
   width: 100%;
   margin-top: 10px;
 }
 
-/* HIGHLIGHT (SEARCH MATCH) */
+/* 🔥 HIGHLIGHT FIX (NO BOLD, NO BREAK) */
 .highlight {
-  background: yellow;
-  font-weight: bold;
-  padding: 1px 3px;
-  border-radius: 3px;
+  background: #fff176;   /* softer yellow */
+  font-weight: normal;   /* IMPORTANT */
+  padding: 0 2px;
+  border-radius: 2px;
 }
 
-/* BACK BUTTON (FIXED) */
+/* BACK BUTTON */
 .back-btn {
   background: #555;
   margin-bottom: 10px;
@@ -149,14 +149,14 @@ button:disabled {
   color: #1E73BE;
 }
 
-/* CART ITEMS */
+/* CART ITEM */
 .cart-item {
   font-size: 14px;
-  padding: 4px 0;
+  padding: 6px 0;
   border-bottom: 1px solid #eee;
 }
 
-/* PLACE ORDER BUTTON */
+/* PLACE ORDER */
 .place-btn {
   background: #28a745;
   margin-top: 8px;
@@ -166,7 +166,7 @@ button:disabled {
   background: #218838;
 }
 
-/* MOBILE OPTIMIZATION */
+/* MOBILE */
 @media (max-width: 600px) {
   .product {
     font-size: 14px;
