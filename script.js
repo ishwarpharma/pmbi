@@ -63,12 +63,12 @@ function startApp() {
 }
 
 
-// ✨ CLEAN HIGHLIGHT (NO BUG)
+// ✨ HIGHLIGHT FIXED
 function highlight(text, query) {
   if (!text || !query) return text || "";
 
   let cleanText = text.toString();
-  let words = query.split(" ").filter(w => w.length > 1); // ignore small words
+  let words = query.split(" ").filter(w => w.length > 1);
 
   words.forEach(word => {
     let escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -253,24 +253,66 @@ function closeCart() {
 }
 
 
-// 📲 PLACE ORDER
-function place() {
-  let msg = "🧾 PMBI ORDER\n\n";
-  let total = 0;
+// 📥 DOWNLOAD EXCEL
+function downloadExcel() {
+  let store = document.getElementById("storeCode").value;
+  let city = document.getElementById("city").value;
+  let mobile = document.getElementById("mobile").value;
 
-  cart.forEach((i, idx) => {
-    let val = i.order_qty * i.price;
-    total += val;
+  let sheetData = [];
 
-    msg += `${idx+1}. ${i.drug_name}
-Qty: ${i.order_qty}
-Pack: ${i.uom}
-Value: ₹ ${round2(val)}
+  sheetData.push(["Store Code", store]);
+  sheetData.push(["City", city]);
+  sheetData.push(["Mobile", mobile]);
+  sheetData.push([]);
 
-`;
+  sheetData.push([
+    "SAP Code",
+    "Item Name",
+    "Qty",
+    "Rate",
+    "Amount",
+    "Batch",
+    "Expiry"
+  ]);
+
+  cart.forEach(item => {
+    sheetData.push([
+      item.drug_code,
+      item.drug_name,
+      item.order_qty,
+      round2(item.price),
+      round2(item.order_qty * item.price),
+      item.batch,
+      item.expiry
+    ]);
   });
 
-  msg += `Total: ₹ ${round2(total)}`;
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Order");
+
+  XLSX.writeFile(wb, "PMBI_Order.xlsx");
+}
+
+
+// 📲 PLACE ORDER (HYBRID)
+function place() {
+  if (cart.length === 0) {
+    alert("Cart empty");
+    return;
+  }
+
+  // 1️⃣ Download Excel
+  downloadExcel();
+
+  // 2️⃣ WhatsApp message
+  let msg = "🧾 PMBI ORDER\n\n";
+  msg += "Excel file downloaded.\nPlease attach and send.\n\n";
+
+  cart.forEach((i, idx) => {
+    msg += `${idx+1}. ${i.drug_name} - Qty: ${i.order_qty}\n`;
+  });
 
   window.open(`https://wa.me/919324824900?text=${encodeURIComponent(msg)}`);
 }
