@@ -144,15 +144,40 @@
 
 <!-- LOGIN -->
 <div class="login-box" id="loginBox">
-  <input type="text" id="storeCode" placeholder="🏪 Store Code">
-  <input type="text" id="city" placeholder="📍 City / District">
-  <input type="number" id="mobile" placeholder="📱 Mobile Number">
 
-  <button onclick="startApp()">Start Ordering</button>
+  <input 
+    type="text" 
+    id="storeCode" 
+    placeholder="🏪 Enter Store Code"
+    inputmode="numeric"
+    pattern="[0-9]*"
+  >
 
-  <div class="warning-text">
-    ⚠️ You can browse without filling details, but order will NOT be processed without Store Code, City, and Mobile Number.
-  </div>
+  <input 
+    type="text" 
+    id="city" 
+    placeholder="📍 Enter City / District"
+  >
+
+  <input 
+    type="tel" 
+    id="mobile" 
+    placeholder="📱 Enter Mobile Number"
+    inputmode="numeric"
+    pattern="[0-9]*"
+  >
+
+  <button onclick="startApp()">🚀 Start Ordering</button>
+
+<div class="warning-text">
+  ⚠️ You can browse without filling details, but order will NOT be processed without Store Code, City, and Mobile Number.<br><br>
+
+  📦 Only stocks available with <b>PMBI Nagpur Depot – Ishwar Pharma</b> are shown.<br>
+
+  ❗ If an item is not visible in search, it means it is currently <b>not in stock</b>.
+</div>
+  
+  <
 </div>
 
 <!-- MAIN APP -->
