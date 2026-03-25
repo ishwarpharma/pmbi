@@ -22,35 +22,29 @@ function round2(num) {
 
 // 🚀 LOAD EXCEL
 async function loadExcelFromServer() {
-  try {
-    const res = await fetch("pmbi.xlsx");
-    const buffer = await res.arrayBuffer();
+  const res = await fetch("pmbi.xlsx");
+  const buffer = await res.arrayBuffer();
 
-    const wb = XLSX.read(buffer, { type: "array" });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
+  const wb = XLSX.read(buffer, { type: "array" });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
 
-    let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-    rows = rows.filter(r => r.length > 3);
-    rows.shift();
+  rows = rows.filter(r => r.length > 3);
+  rows.shift();
 
-    data = rows.map(r => ({
-      drug_code: r[1]?.toString().trim(),
-      drug_name: r[2]?.toString().trim(),
-      uom: r[3] || "",
-      batch: r[4] || "",
-      expiry: formatExcelDate(r[5]),
-      qty: Number(r[6]) || 0,
-      price: Number(r[8]) || 0,
-      mrp: Number(r[9]) || 0
-    }));
+  data = rows.map(r => ({
+    drug_code: r[1]?.toString().trim(),
+    drug_name: r[2]?.toString().trim(),
+    uom: r[3] || "",
+    batch: r[4] || "",
+    expiry: formatExcelDate(r[5]),
+    qty: Number(r[6]) || 0,
+    price: Number(r[8]) || 0,
+    mrp: Number(r[9]) || 0
+  }));
 
-    displayProducts(data);
-
-  } catch (err) {
-    alert("❌ Excel file not found.");
-    console.error(err);
-  }
+  displayProducts(data);
 }
 
 loadExcelFromServer();
@@ -63,50 +57,44 @@ function startApp() {
 }
 
 
-// ✨ HIGHLIGHT FIXED
+// ✨ HIGHLIGHT
 function highlight(text, query) {
-  if (!text || !query) return text || "";
+  if (!text || !query) return text;
 
-  let cleanText = text.toString();
   let words = query.split(" ").filter(w => w.length > 1);
+  let result = text;
 
   words.forEach(word => {
-    let escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    let regex = new RegExp(escaped, "gi");
-
-    cleanText = cleanText.replace(regex, match =>
-      `<span class="highlight">${match}</span>`
-    );
+    let regex = new RegExp(word, "gi");
+    result = result.replace(regex, m => `<span class="highlight">${m}</span>`);
   });
 
-  return cleanText;
+  return result;
 }
 
 
-// 🔍 SMART SEARCH
+// 🔍 SEARCH
 function searchProducts() {
-  let query = document.getElementById("search").value.toLowerCase().trim();
+  let q = document.getElementById("search").value.toLowerCase().trim();
 
-  if (!query) return displayProducts(data);
+  if (!q) return displayProducts(data);
 
-  let words = query.split(" ").filter(w => w.length > 1);
+  let words = q.split(" ").filter(w => w.length > 1);
 
-  let results = data.map(item => {
+  let res = data.map(item => {
     let score = 0;
     let text = (item.drug_code + " " + item.drug_name).toLowerCase();
 
-    words.forEach(word => {
-      if (text.includes(word)) score += 2;
+    words.forEach(w => {
+      if (text.includes(w)) score += 2;
     });
 
     return { ...item, score };
   });
 
-  results = results
-    .filter(i => i.score > 0)
-    .sort((a, b) => b.score - a.score);
+  res = res.filter(i => i.score > 0).sort((a, b) => b.score - a.score);
 
-  displayProducts(results, query);
+  displayProducts(res, q);
 }
 
 
@@ -117,17 +105,17 @@ function resetSearch() {
 }
 
 
-// 📦 LIST VIEW
+// 📦 LIST
 function displayProducts(items, query = "") {
   let html = "";
 
-  items.slice(0, 100).forEach(item => {
-    if (!item.drug_code || !item.drug_name) return;
+  items.slice(0, 100).forEach(i => {
+    if (!i.drug_code) return;
 
     html += `
-      <div class="product" onclick="showDetails('${item.drug_code}')">
-        ${highlight(item.drug_code, query)} - 
-        ${highlight(item.drug_name, query)}
+      <div class="product" onclick="showDetails('${i.drug_code}')">
+        ${highlight(i.drug_code, query)} - 
+        ${highlight(i.drug_name, query)}
       </div>
     `;
   });
@@ -147,19 +135,19 @@ function showDetails(code) {
 
       <b>${i.drug_name}</b><br><br>
 
-      Drug Code: ${i.drug_code}<br>
+      Code: ${i.drug_code}<br>
       Pack: ${i.uom}<br>
       Batch: ${i.batch}<br>
       Expiry: ${i.expiry}<br>
 
       <span style="color:red">Stock: ${i.qty}</span><br>
-      <span style="color:green">Rate: ₹ ${round2(i.price)}</span><br>
-      MRP: ₹ ${round2(i.mrp)}<br><br>
+      <span style="color:green">Rate: ₹ ${round2(i.price)}</span><br><br>
 
-      <input type="number" id="qty" placeholder="Enter Qty"
-        min="1" max="${i.qty}" oninput="calc(${i.price})">
+      <input type="number" inputmode="numeric" id="qty"
+        placeholder="Enter Qty" min="1" max="${i.qty}"
+        oninput="calc(${i.price})">
 
-      <div id="amt" style="margin-top:8px;font-weight:bold;"></div>
+      <div id="amt"></div>
 
       <button onclick="add('${i.drug_code}')">Add to Cart</button>
 
@@ -173,7 +161,6 @@ function showDetails(code) {
 // 💰 AMOUNT
 function calc(price) {
   let q = document.getElementById("qty").value;
-
   if (!q) return document.getElementById("amt").innerHTML = "";
 
   document.getElementById("amt").innerHTML =
@@ -187,21 +174,20 @@ function add(code) {
   let q = parseInt(document.getElementById("qty").value);
 
   if (!q) return alert("Enter qty");
-  if (q > i.qty) return alert("Exceeds stock");
 
-  let existing = cart.find(x => x.drug_code == code);
+  let e = cart.find(x => x.drug_code == code);
 
-  if (existing) existing.order_qty += q;
+  if (e) e.order_qty += q;
   else cart.push({ ...i, order_qty: q });
 
-  alert("✅ Added to cart");
+  alert("Added");
 }
 
 
-// 👁 VIEW CART
+// 👁 CART
 function openCart() {
   let html = `<div class="product">
-    <button class="back-btn" onclick="closeCart()">⬅ Back</button><br><br>`;
+    <button onclick="closeCart()">⬅ Back</button><br><br>`;
 
   let total = 0;
 
@@ -210,81 +196,70 @@ function openCart() {
     total += val;
 
     html += `
-      <div class="cart-item">
-        ${i.drug_name}<br>
-
-        Qty:
-        <input type="number" value="${i.order_qty}" 
-          onchange="edit(${idx}, this.value)">
-
-        × ₹ ${round2(i.price)} = 
-        <b>₹ ${round2(val)}</b>
-
-        <span onclick="del(${idx})" style="color:red; float:right; cursor:pointer;">❌</span>
-      </div><hr>
+      ${i.drug_name}<br>
+      Qty: <input value="${i.order_qty}" type="number"
+      onchange="edit(${idx}, this.value)">
+      ₹ ${round2(val)}
+      <span onclick="del(${idx})">❌</span><hr>
     `;
   });
 
   html += `<b>Total: ₹ ${round2(total)}</b><br><br>`;
-  html += `<button onclick="place()">Place Order</button></div>`;
+  html += `<button onclick="showOrderOptions()">Place Order</button>`;
 
   document.getElementById("products").innerHTML = html;
 }
 
 
-// ✏️ EDIT
-function edit(index, qty) {
-  if (qty <= 0) return;
-  cart[index].order_qty = parseInt(qty);
-  openCart();
-}
-
-
 // ❌ DELETE
-function del(index) {
-  cart.splice(index, 1);
+function del(i) {
+  cart.splice(i, 1);
   openCart();
 }
 
 
-// ❌ CLOSE CART
-function closeCart() {
-  displayProducts(data);
+// ✏️ EDIT
+function edit(i, q) {
+  cart[i].order_qty = parseInt(q);
+  openCart();
+}
+
+
+// 📦 ORDER OPTIONS SCREEN
+function showOrderOptions() {
+  let html = `
+    <div class="product">
+
+      <button onclick="closeCart()">⬅ Back</button><br><br>
+
+      <h3>Select Order Method</h3>
+
+      <button onclick="downloadExcel()">📥 Download Excel</button><br><br>
+
+      <button onclick="sendWhatsApp()">📲 Send via WhatsApp</button><br><br>
+
+      <button onclick="sendEmail()">📧 Send via Email</button>
+
+    </div>
+  `;
+
+  document.getElementById("products").innerHTML = html;
 }
 
 
 // 📥 DOWNLOAD EXCEL
 function downloadExcel() {
-  let store = document.getElementById("storeCode").value;
-  let city = document.getElementById("city").value;
-  let mobile = document.getElementById("mobile").value;
+  let sheetData = [["SAP Code","Item","Qty","Rate","Amount","Batch","Expiry"]];
 
-  let sheetData = [];
-
-  sheetData.push(["Store Code", store]);
-  sheetData.push(["City", city]);
-  sheetData.push(["Mobile", mobile]);
-  sheetData.push([]);
-
-  sheetData.push([
-    "SAP Code",
-    "Item Name",
-    "Qty",
-    "Rate",
-    "Amount",
-    "Batch",
-    "Expiry"
-  ]);
-
-  cart.forEach(item => {
+  cart.forEach(i => {
     sheetData.push([
-      item.drug_code,
-      item.drug_name,
-      item.order_qty,
-      round2(item.price),
-      round2(item.order_qty * item.price),
-      item.batch,
-      item.expiry
+      i.drug_code,
+      i.drug_name,
+      i.order_qty,
+      i.price,
+      round2(i.order_qty * i.price),
+      i.batch,
+      i.expiry
     ]);
   });
 
@@ -296,23 +271,30 @@ function downloadExcel() {
 }
 
 
-// 📲 PLACE ORDER (HYBRID)
-function place() {
-  if (cart.length === 0) {
-    alert("Cart empty");
-    return;
-  }
+// 📲 WHATSAPP
+function sendWhatsApp() {
+  let store = document.getElementById("storeCode").value;
+  let city = document.getElementById("city").value;
+  let mobile = document.getElementById("mobile").value;
 
-  // 1️⃣ Download Excel
-  downloadExcel();
-
-  // 2️⃣ WhatsApp message
-  let msg = "🧾 PMBI ORDER\n\n";
-  msg += "Excel file downloaded.\nPlease attach and send.\n\n";
+  let msg = `PMBI ORDER\nStore: ${store}\nCity: ${city}\nMobile: ${mobile}\n\n`;
 
   cart.forEach((i, idx) => {
-    msg += `${idx+1}. ${i.drug_name} - Qty: ${i.order_qty}\n`;
+    msg += `${i.drug_name} (${i.drug_code})\nQty: ${i.order_qty}\n\n`;
   });
 
   window.open(`https://wa.me/919324824900?text=${encodeURIComponent(msg)}`);
+}
+
+
+// 📧 EMAIL
+function sendEmail() {
+  let msg = "PMBI Order Attached";
+  window.location.href = `mailto:?subject=PMBI Order&body=${encodeURIComponent(msg)}`;
+}
+
+
+// ❌ CLOSE
+function closeCart() {
+  displayProducts(data);
 }
