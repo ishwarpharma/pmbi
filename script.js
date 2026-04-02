@@ -283,7 +283,7 @@ function sendWhatsApp() {
     msg += `${i.drug_name} (${i.drug_code})\nQty: ${i.order_qty}\n\n`;
   });
 
-  window.open(`https://wa.me/919324824900?text=${encodeURIComponent(msg)}`);
+  window.open(`https://wa.me/917719802220?text=${encodeURIComponent(msg)}`);
 }
 
 
