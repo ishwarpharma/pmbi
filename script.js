@@ -1,300 +1,179 @@
-let data = [];
-let cart = [];
+const DATA_URL = "SWSA.csv";
 
+let fullData=[], filteredData=[], currentUser, chartInstance;
+let selectedParty="", selectedItem="";
 
-// 📅 DATE FIX
-function formatExcelDate(excelDate) {
-  if (!excelDate) return "";
+const formatK = v => Math.round(v/1000)+"K";
 
-  if (typeof excelDate === "number") {
-    let date = new Date((excelDate - 25569) * 86400 * 1000);
-    return date.toLocaleDateString("en-GB");
+// LOGIN
+function login(){
+  const u=username.value.trim();
+  const p=password.value.trim();
+  const user=USERS.find(x=>x.username===u && x.password===p);
+  if(!user) return alert("Invalid Login");
+  localStorage.setItem("user",JSON.stringify(user));
+  init();
+}
+
+// INIT
+async function init(){
+  currentUser=JSON.parse(localStorage.getItem("user"));
+  loginPage.style.display="none";
+  dashboard.style.display="block";
+
+  dashboardTitle.innerText=currentUser.companies.join(" + ")+" DASHBOARD";
+
+  fullData=await loadData();
+  populateArea();
+  applyFilters();
+
+  partySearch.oninput=()=>showDropdown("party");
+  itemSearch.oninput=()=>showDropdown("item");
+
+  document.addEventListener("click",()=>hideDropdowns());
+}
+
+// LOAD
+async function loadData(){
+  const t=await (await fetch(DATA_URL)).text();
+  let [h,...rows]=t.split("\n").map(r=>r.split(","));
+  return rows.map(r=>{
+    let o={}; h.forEach((x,i)=>o[x.trim()]=r[i]); return o;
+  });
+}
+
+// FILTER
+function applyFilters(){
+  filteredData=fullData.filter(d=>{
+    if(!currentUser.companies.includes(d["Company Name"])) return false;
+    if(selectedParty && d["Party Name"]!==selectedParty) return false;
+    if(selectedItem && d["Item Name"]!==selectedItem) return false;
+    return true;
+  });
+  render();
+}
+
+// DROPDOWN
+function showDropdown(type){
+  let input=(type==="party"?partySearch:itemSearch).value.toLowerCase();
+  let key=type==="party"?"Party Name":"Item Name";
+  let box=document.getElementById(type+"Dropdown");
+
+  let list=[...new Set(fullData.map(d=>d[key]).filter(Boolean))];
+
+  let filtered=list.filter(n=>
+    input.split(" ").every(w=>n.toLowerCase().includes(w))
+  ).slice(0,10);
+
+  box.innerHTML=filtered.map(n=>
+    `<div onclick="select('${type}','${n}')">${highlight(n,input)}</div>`
+  ).join("");
+
+  box.style.display=filtered.length?"block":"none";
+}
+
+// SELECT FROM DROPDOWN
+function select(type,val){
+  if(type==="party"){selectedParty=val; partySearch.value=val;}
+  if(type==="item"){selectedItem=val; itemSearch.value=val;}
+  hideDropdowns();
+  applyFilters();
+}
+
+// CLICK FROM TABLE 🔥
+function selectFromTable(type,val){
+  if(type==="party"){
+    selectedParty=val;
+    partySearch.value=val;
   }
-
-  return excelDate;
+  if(type==="item"){
+    selectedItem=val;
+    itemSearch.value=val;
+  }
+  applyFilters();
 }
 
-// 💰 ROUND
-function round2(num) {
-  return Number(num).toFixed(2);
+// HIDE
+function hideDropdowns(){
+  document.querySelectorAll(".dropdown").forEach(d=>d.style.display="none");
 }
 
+// RESET
+function resetParty(){selectedParty=""; partySearch.value=""; applyFilters();}
+function resetItem(){selectedItem=""; itemSearch.value=""; applyFilters();}
 
-// 🚀 LOAD EXCEL
-async function loadExcelFromServer() {
-  const res = await fetch("pmbi.xlsx");
-  const buffer = await res.arrayBuffer();
-
-  const wb = XLSX.read(buffer, { type: "array" });
-  const sheet = wb.Sheets[wb.SheetNames[0]];
-
-  let rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-  rows = rows.filter(r => r.length > 3);
-  rows.shift();
-
-  data = rows.map(r => ({
-    drug_code: r[1]?.toString().trim(),
-    drug_name: r[2]?.toString().trim(),
-    uom: r[3] || "",
-    batch: r[4] || "",
-    expiry: formatExcelDate(r[5]),
-    qty: Number(r[6]) || 0,
-    price: Number(r[8]) || 0,
-    mrp: Number(r[9]) || 0
-  }));
-
-  displayProducts(data);
+// HIGHLIGHT
+function highlight(t,s){
+  if(!s) return t;
+  return t.replace(new RegExp(`(${s})`,"gi"),"<span style='background:yellow'>$1</span>");
 }
 
-loadExcelFromServer();
-
-
-// 🚀 START
-function startApp() {
-  document.getElementById("loginBox").style.display = "none";
-  document.getElementById("app").style.display = "block";
+// AREA
+function populateArea(){
+  let a=[...new Set(fullData.map(d=>d["Area Name"]))];
+  area.innerHTML=`<option value="">All Areas</option>`+a.map(x=>`<option>${x}</option>`).join("");
 }
 
+// RENDER
+function render(){
+  let total=filteredData.reduce((s,d)=>s+Number(d["Amount"]||0),0);
+  totalSales.innerText="Total Sales ₹ "+formatK(total);
 
-// ✨ HIGHLIGHT
-function highlight(text, query) {
-  if (!text || !query) return text;
+  drawChart();
+  drawTables();
+}
 
-  let words = query.split(" ").filter(w => w.length > 1);
-  let result = text;
-
-  words.forEach(word => {
-    let regex = new RegExp(word, "gi");
-    result = result.replace(regex, m => `<span class="highlight">${m}</span>`);
+// CHART
+function drawChart(){
+  let map={};
+  filteredData.forEach(d=>{
+    let dt=new Date(d["Date"].split("-").reverse().join("-"));
+    let k=dt.getFullYear()+"-"+(dt.getMonth()+1);
+    map[k]=(map[k]||0)+Number(d["Amount"]||0);
   });
 
-  return result;
+  let keys=Object.keys(map).sort((a,b)=>new Date(a)-new Date(b));
+
+  if(chartInstance) chartInstance.destroy();
+
+  chartInstance=new Chart(monthChart,{
+    type:"bar",
+    data:{
+      labels:keys,
+      datasets:[{data:keys.map(k=>map[k])}]
+    }
+  });
 }
 
+// TABLES (CLICK ENABLED 🔥)
+function drawTables(){
 
-// 🔍 SEARCH
-function searchProducts() {
-  let q = document.getElementById("search").value.toLowerCase().trim();
+  let partyMap={}, itemMap={};
 
-  if (!q) return displayProducts(data);
-
-  let words = q.split(" ").filter(w => w.length > 1);
-
-  let res = data.map(item => {
-    let score = 0;
-    let text = (item.drug_code + " " + item.drug_name).toLowerCase();
-
-    words.forEach(w => {
-      if (text.includes(w)) score += 2;
-    });
-
-    return { ...item, score };
+  filteredData.forEach(d=>{
+    let p=d["Party Name"], i=d["Item Name"], a=Number(d["Amount"]||0);
+    partyMap[p]=(partyMap[p]||0)+a;
+    itemMap[i]=(itemMap[i]||0)+a;
   });
 
-  res = res.filter(i => i.score > 0).sort((a, b) => b.score - a.score);
+  let partyList=Object.entries(partyMap).sort((a,b)=>b[1]-a[1]);
+  let itemList=Object.entries(itemMap).sort((a,b)=>b[1]-a[1]);
 
-  displayProducts(res, q);
+  partyPreview.innerHTML = partyList.map((p,i)=>
+    `<div class="row" onclick="selectFromTable('party','${p[0]}')">
+      <span>${i+1}</span>
+      <span>${p[0]}</span>
+      <span>₹ ${formatK(p[1])}</span>
+    </div>`
+  ).join("");
+
+  itemPreview.innerHTML = itemList.map((i,x)=>
+    `<div class="row" onclick="selectFromTable('item','${i[0]}')">
+      <span>${x+1}</span>
+      <span>${i[0]}</span>
+      <span>₹ ${formatK(i[1])}</span>
+    </div>`
+  ).join("");
 }
 
-
-// 🔄 RESET
-function resetSearch() {
-  document.getElementById("search").value = "";
-  displayProducts(data);
-}
-
-
-// 📦 LIST
-function displayProducts(items, query = "") {
-  let html = "";
-
-  items.slice(0, 100).forEach(i => {
-    if (!i.drug_code) return;
-
-    html += `
-      <div class="product" onclick="showDetails('${i.drug_code}')">
-        ${highlight(i.drug_code, query)} - 
-        ${highlight(i.drug_name, query)}
-      </div>
-    `;
-  });
-
-  document.getElementById("products").innerHTML = html;
-}
-
-
-// 📄 DETAILS
-function showDetails(code) {
-  let i = data.find(x => x.drug_code == code);
-
-  let html = `
-    <div class="product">
-
-      <button class="back-btn" onclick="displayProducts(data)">⬅ Back</button>
-
-      <b>${i.drug_name}</b><br><br>
-
-      Code: ${i.drug_code}<br>
-      Pack: ${i.uom}<br>
-      Batch: ${i.batch}<br>
-      Expiry: ${i.expiry}<br>
-
-      <span style="color:red">Stock: ${i.qty}</span><br>
-      <span style="color:green">Rate: ₹ ${round2(i.price)}</span><br><br>
-
-      <input type="number" inputmode="numeric" id="qty"
-        placeholder="Enter Qty" min="1" max="${i.qty}"
-        oninput="calc(${i.price})">
-
-      <div id="amt"></div>
-
-      <button onclick="add('${i.drug_code}')">Add to Cart</button>
-
-    </div>
-  `;
-
-  document.getElementById("products").innerHTML = html;
-}
-
-
-// 💰 AMOUNT
-function calc(price) {
-  let q = document.getElementById("qty").value;
-  if (!q) return document.getElementById("amt").innerHTML = "";
-
-  document.getElementById("amt").innerHTML =
-    `Amount: ₹ ${round2(q * price)}`;
-}
-
-
-// 🛒 ADD
-function add(code) {
-  let i = data.find(x => x.drug_code == code);
-  let q = parseInt(document.getElementById("qty").value);
-
-  if (!q) return alert("Enter qty");
-
-  let e = cart.find(x => x.drug_code == code);
-
-  if (e) e.order_qty += q;
-  else cart.push({ ...i, order_qty: q });
-
-  alert("Added");
-}
-
-
-// 👁 CART
-function openCart() {
-  let html = `<div class="product">
-    <button onclick="closeCart()">⬅ Back</button><br><br>`;
-
-  let total = 0;
-
-  cart.forEach((i, idx) => {
-    let val = i.order_qty * i.price;
-    total += val;
-
-    html += `
-      ${i.drug_name}<br>
-      Qty: <input value="${i.order_qty}" type="number"
-      onchange="edit(${idx}, this.value)">
-      ₹ ${round2(val)}
-      <span onclick="del(${idx})">❌</span><hr>
-    `;
-  });
-
-  html += `<b>Total: ₹ ${round2(total)}</b><br><br>`;
-  html += `<button onclick="showOrderOptions()">Place Order</button>`;
-
-  document.getElementById("products").innerHTML = html;
-}
-
-
-// ❌ DELETE
-function del(i) {
-  cart.splice(i, 1);
-  openCart();
-}
-
-
-// ✏️ EDIT
-function edit(i, q) {
-  cart[i].order_qty = parseInt(q);
-  openCart();
-}
-
-
-// 📦 ORDER OPTIONS SCREEN
-function showOrderOptions() {
-  let html = `
-    <div class="product">
-
-      <button onclick="closeCart()">⬅ Back</button><br><br>
-
-      <h3>Select Order Method</h3>
-
-      <button onclick="downloadExcel()">📥 Download Excel</button><br><br>
-
-      <button onclick="sendWhatsApp()">📲 Send via WhatsApp</button><br><br>
-
-      <button onclick="sendEmail()">📧 Send via Email</button>
-
-    </div>
-  `;
-
-  document.getElementById("products").innerHTML = html;
-}
-
-
-// 📥 DOWNLOAD EXCEL
-function downloadExcel() {
-  let sheetData = [["SAP Code","Item","Qty","Rate","Amount","Batch","Expiry"]];
-
-  cart.forEach(i => {
-    sheetData.push([
-      i.drug_code,
-      i.drug_name,
-      i.order_qty,
-      i.price,
-      round2(i.order_qty * i.price),
-      i.batch,
-      i.expiry
-    ]);
-  });
-
-  const ws = XLSX.utils.aoa_to_sheet(sheetData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Order");
-
-  XLSX.writeFile(wb, "PMBI_Order.xlsx");
-}
-
-
-// 📲 WHATSAPP
-function sendWhatsApp() {
-  let store = document.getElementById("storeCode").value;
-  let city = document.getElementById("city").value;
-  let mobile = document.getElementById("mobile").value;
-
-  let msg = `PMBI ORDER\nStore: ${store}\nCity: ${city}\nMobile: ${mobile}\n\n`;
-
-  cart.forEach((i, idx) => {
-    msg += `${i.drug_name} (${i.drug_code})\nQty: ${i.order_qty}\n\n`;
-  });
-
-  window.open(`https://wa.me/917719802220?text=${encodeURIComponent(msg)}`);
-}
-
-
-// 📧 EMAIL
-function sendEmail() {
-  let msg = "PMBI Order Attached";
-  window.location.href = `mailto:?subject=PMBI Order&body=${encodeURIComponent(msg)}`;
-}
-
-
-// ❌ CLOSE
-function closeCart() {
-  displayProducts(data);
-}
+if(localStorage.getItem("user")) init();

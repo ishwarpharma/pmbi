@@ -1,187 +1,102 @@
-/* GLOBAL */
 body {
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   margin: 0;
-  background: #f4f8fb;
+  background: #f4f6f9;
 }
 
-/* HEADER */
-.topbar {
-  background: linear-gradient(90deg, #1E73BE, #155a96);
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
   color: white;
-  text-align: center;
-  padding: 14px 10px;
-  font-size: 18px;
-  font-weight: bold;
+  background: linear-gradient(45deg,#4e54c8,#8f94fb);
 }
 
-.subtext {
-  font-size: 12px;
-  opacity: 0.9;
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 10px;
 }
 
-/* LOGIN */
-.login-box {
-  padding: 20px;
-}
+.full { grid-column: span 2; }
 
-/* INPUTS */
-input {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border-radius: 10px;
+input, select {
+  padding: 10px;
+  border-radius: 8px;
   border: 1px solid #ccc;
-  font-size: 15px;
-  box-sizing: border-box;
-}
-
-/* BUTTON */
-button {
   width: 100%;
-  padding: 12px;
-  background: #F58220;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: bold;
+}
+
+.filter-box { position: relative; }
+
+.clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
   cursor: pointer;
-  transition: 0.2s;
+  color: red;
 }
 
-button:hover {
-  opacity: 0.9;
-}
-
-button:active {
-  transform: scale(0.98);
-}
-
-/* DISABLED BUTTON */
-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-/* SEARCH */
-.search-box {
-  position: sticky;
-  top: 0;
-  background: #ffffff;
-  padding: 10px;
-  z-index: 10;
-  border-bottom: 1px solid #ddd;
-}
-
-.search-box input {
-  border: 2px solid #1E73BE;
-  border-radius: 25px;
-  padding-left: 15px;
-}
-
-/* PRODUCT LIST */
-.product {
+.dropdown {
+  position: absolute;
+  top: 45px;
+  width: 100%;
   background: white;
-  margin: 10px;
-  padding: 12px;
-  border-radius: 12px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-  border-left: 5px solid #1E73BE;
-  cursor: pointer;
-  transition: 0.2s;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 9999;
 }
 
-.product:hover {
-  background: #f1f7ff;
-}
-
-/* PRODUCT TITLE */
-.product b {
-  color: #1E73BE;
-}
-
-/* DETAIL INPUT */
-.product input {
-  width: 100%;
-  margin-top: 10px;
-}
-
-/* DETAIL BUTTON */
-.product button {
-  width: 100%;
-  margin-top: 10px;
-}
-
-/* 🔥 HIGHLIGHT FIX (NO BOLD, NO BREAK) */
-.highlight {
-  background: #fff176;   /* softer yellow */
-  font-weight: normal;   /* IMPORTANT */
-  padding: 0 2px;
-  border-radius: 2px;
-}
-
-/* BACK BUTTON */
-.back-btn {
-  background: #555;
-  margin-bottom: 10px;
-}
-
-.back-btn:hover {
-  background: #444;
-}
-
-/* CART */
-.cart {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: #ffffff;
+.dropdown div {
   padding: 10px;
-  border-top: 2px solid #ddd;
-  box-shadow: 0 -3px 8px rgba(0,0,0,0.1);
-  max-height: 220px;
+  cursor: pointer;
+}
+
+.dropdown div:hover { background: #e3f2fd; }
+
+.card.big {
+  margin: 10px;
+  padding: 15px;
+  text-align: center;
+  font-size: 20px;
+  background: linear-gradient(45deg,#36d1dc,#5b86e5);
+  color: white;
+  border-radius: 10px;
+}
+
+.box {
+  margin: 10px;
+  padding: 10px;
+  background: white;
+  border-radius: 10px;
+}
+
+.table {
+  max-height: 300px;
   overflow-y: auto;
 }
 
-.cart h3 {
-  margin: 5px 0;
-  color: #1E73BE;
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px;
+  cursor: pointer;
 }
 
-/* CART ITEM */
-.cart-item {
-  font-size: 14px;
-  padding: 6px 0;
-  border-bottom: 1px solid #eee;
+.row:nth-child(even) { background: #f2f2f2; }
+.row:nth-child(odd) { background: #ffffff; }
+
+.row:hover {
+  background: #d1ecf1;
 }
 
-/* PLACE ORDER */
-.place-btn {
-  background: #28a745;
-  margin-top: 8px;
-}
+.row span:first-child { width: 40px; }
+.row span:nth-child(2) { flex: 1; }
 
-.place-btn:hover {
-  background: #218838;
-}
-
-/* MOBILE */
-@media (max-width: 600px) {
-  .product {
-    font-size: 14px;
-    padding: 10px;
-  }
-
-  .topbar {
-    font-size: 16px;
-  }
-
-  input {
-    font-size: 14px;
-  }
-
-  button {
-    font-size: 15px;
-  }
+.center {
+  text-align: center;
+  margin-top: 100px;
 }

@@ -1,212 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PMBI Order System</title>
-
-  <!-- SheetJS -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #f4f8fb;
-    }
-
-    /* HEADER */
-    .topbar {
-      background: #1E73BE;
-      color: white;
-      padding: 14px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    .subtext {
-      font-size: 13px;
-      opacity: 0.9;
-    }
-
-    .container {
-      padding: 10px;
-    }
-
-    /* LOGIN */
-    .login-box {
-      padding: 20px;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-      box-sizing: border-box;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #F58220;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    /* SEARCH BAR */
-    .search-box {
-      position: sticky;
-      top: 0;
-      background: white;
-      padding: 10px;
-      z-index: 10;
-      border-bottom: 1px solid #ddd;
-    }
-
-    .search-box input {
-      border: 2px solid #1E73BE;
-      border-radius: 25px;
-      padding-left: 15px;
-    }
-
-    /* ACTION BUTTONS */
-    .action-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .action-row button {
-      flex: 1;
-      font-size: 14px;
-      padding: 10px;
-    }
-
-    .reset-btn {
-      background: #6c757d;
-    }
-
-    .cart-btn {
-      background: #28a745;
-    }
-
-    /* PRODUCT LIST */
-    .product {
-      background: white;
-      margin: 10px 0;
-      padding: 12px;
-      border-radius: 10px;
-      border-left: 5px solid #1E73BE;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      cursor: pointer;
-    }
-
-    .product:hover {
-      background: #f1f7ff;
-    }
-
-    .highlight {
-      background: yellow;
-      font-weight: bold;
-    }
-
-    .back-btn {
-      background: #555;
-      margin-bottom: 10px;
-    }
-
-    .warning-text {
-      font-size: 12px;
-      color: red;
-      margin-top: 5px;
-    }
-  </style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CADILA Dashboard</title>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<!-- HEADER -->
-<div class="topbar">
-  🏥 Jan Aushadhi Order Portal  
-  <div class="subtext">Ishwar Pharma Nagpur</div>
+<div id="loginPage" class="center">
+  <h2>Login</h2>
+  <input id="username" placeholder="Username"><br>
+  <input id="password" type="password" placeholder="Password"><br>
+  <button onclick="login()">Login</button>
 </div>
 
-<!-- LOGIN -->
-<div class="login-box" id="loginBox">
+<div id="dashboard" style="display:none">
 
-  <input 
-    type="text" 
-    id="storeCode" 
-    placeholder="🏪 Enter Store Code"
-    inputmode="numeric"
-    pattern="[0-9]*"
-  >
-
-  <input 
-    type="text" 
-    id="city" 
-    placeholder="📍 Enter City / District"
-  >
-
-  <input 
-    type="tel" 
-    id="mobile" 
-    placeholder="📱 Enter Mobile Number"
-    inputmode="numeric"
-    pattern="[0-9]*"
-  >
-
-  <button onclick="startApp()">🚀 Start Ordering</button>
-
-<div class="warning-text">
-  ⚠️ You can browse without filling details, but order will NOT be processed without Store Code, City, and Mobile Number.<br><br>
-
-  📦 Only stocks available with <b>PMBI Nagpur Depot – Ishwar Pharma</b> are shown.<br>
-
-  ❗ If an item is not visible in search, it means it is currently <b>not in stock</b>.
-</div>
-  
-  <
-</div>
-
-<!-- MAIN APP -->
-<div id="app" style="display:none;" class="container">
-
-  <!-- SEARCH -->
-  <div class="search-box">
-
-    <input 
-      type="text" 
-      id="search" 
-      placeholder="🔍 Search Drug Code or Name"
-      onkeyup="searchProducts()" 
-    >
-
-    <!-- ACTION BUTTONS -->
-    <div class="action-row">
-      <button class="reset-btn" onclick="resetSearch()">Reset</button>
-      <button class="cart-btn" onclick="openCart()">🛒 View Cart</button>
-    </div>
-
+  <div class="header">
+    <h2 id="dashboardTitle"></h2>
+    <button onclick="logout()">Logout</button>
   </div>
 
-  <!-- PRODUCTS / DETAILS / CART VIEW -->
-  <div id="products"></div>
+  <div class="filters">
+    <select id="period">
+      <option>All Time</option>
+      <option>This Month</option>
+      <option>Last 3 Months</option>
+      <option>Last 6 Months</option>
+      <option>Last 1 Year</option>
+    </select>
+
+    <select id="area"></select>
+
+    <div class="filter-box full">
+      <input id="partySearch" placeholder="Search Party">
+      <div id="partyDropdown" class="dropdown"></div>
+      <span class="clear-btn" onclick="resetParty()">✖</span>
+    </div>
+
+    <div class="filter-box full">
+      <input id="itemSearch" placeholder="Search Item">
+      <div id="itemDropdown" class="dropdown"></div>
+      <span class="clear-btn" onclick="resetItem()">✖</span>
+    </div>
+  </div>
+
+  <div class="card big" id="totalSales"></div>
+
+  <canvas id="monthChart"></canvas>
+
+  <div class="box">
+    <h3>Party Wise Sale</h3>
+    <div id="partyPreview" class="table"></div>
+  </div>
+
+  <div class="box">
+    <h3>Item Wise Sale</h3>
+    <div id="itemPreview" class="table"></div>
+  </div>
 
 </div>
 
-<!-- SCRIPT -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="users.js"></script>
 <script src="script.js"></script>
 
 </body>
